@@ -12,7 +12,8 @@ customized then re-distributed to students in the course.  The
 customized client will embed a particular hostname and port where the
 server is running, as well as a server certificate.
 
-With a customized client, students simply install a @filepath{.plt}
+With a customized client, students simply install a Racket package
+or a @filepath{.plt}
 file---so there's no futzing with configuration dialogs and
 certificates.  A student can install any number of clients at once
 (assuming that the clients are properly customized, as described

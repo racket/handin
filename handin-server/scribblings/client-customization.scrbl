@@ -1,5 +1,6 @@
 #lang scribble/doc
-@(require "common.rkt")
+@(require "common.rkt"
+          scribble/BNF)
 
 @title{Client Customization}
 
@@ -47,34 +48,48 @@ uniquely.  For example, @filepath{uu-cs1410} is a good name for CS
   generate a new (self-certifying) certificate and keep its key
   private.  (See @secref{server-setup}.)}
 
-@item{To create an installable package, run
-  @commandline{raco pack --collect --at-plt ++setup <name> <name>.plt <name>}
-  where @tt{<name>} is the name that you chose for your directory (i.e.,
-  whatever you changed @filepath{handin-client} to).  You can also add a
+@item{To create an installable package, follow the process described
+  in @secref[#:doc '(lib "pkg/scribblings/pkg.scrbl")
+  "how-to-create"].  Note that your copy of the
+  @filepath{handin-client} directory is a collection directory, so it
+  will go inside another directory that represents your
+  package. Usually, both directory layers are called @nonterm{name}
+  for some @nonterm{name} of your choice.}
+
+@item{To create an installable @filepath{.plt} file instead of a
+  package, first arrange for your copy of the @filepath{handin-client}
+  directory to be an installed collection.  You can do that via
+  @exec{raco link} (see @secref["link" #:doc '(lib
+  "scribblings/raco/raco.scrbl")]), by by making sure that the copy is
+  in the same place the original client directory was (see
+  @secref{wheres-the-collection}) or by specifying a value for the
+  @envvar{PLTCOLLECTS} environment variable.  For example, if your
+  customized collection directory is
+  located within @filepath{/home/joe}, then you can prefix the
+  command below with @commandline{PLTCOLLECTS=/home/joe:}
+  (and don't forget the colon at the end of the @envvar{PLTCOLLECTS}
+  value; it is important!)
+
+  With your copy of @filepath{handin-client} called @exec{@nonterm{name}}
+  in place as a collection, run
+  @;
+  @commandline{raco pack --collect --at-plt ++setup @nonterm{name} @nonterm{name}.plt @nonterm{name}}
+  @;
+  You can also add a
   @tt{--replace} flag to make the installation of the resulting file
   replace existing files (useful for creating an update package).
-
-  This directory should exist in your @filepath{collects} directory:
-  this can be done by making sure that the copy is in the same place the
-  original client directory was (see @secref{wheres-the-collection}) or
-  by specifying a value for the @envvar{PLTCOLLECTS} environment
-  variable.  For example, if your customized collection directory is
-  called @filepath{cs1} and it is located at
-  @filepath{/home/joe/intro/cs1}, then you can run
-  @commandline{PLTCOLLECTS=/home/joe/intro: raco pack --collect ...}
-  (Don't forget the colon at the end of the @envvar{PLTCOLLECTS} value;
-  it is important!)
 
   Note that if you create an updated copy of the client package (that
   is, students already have an older version installed), then you should
   use the @DFlag{replace} to indicate that the package should replace
   existing files instead of throwing an error.}
 
-@item{Distribute @filepath{<name>.plt} to students for installation
+@item{Distribute either your package @nonterm{name} or the
+  @filepath{@nonterm{name}.plt} archive to students for installation
   into their copies of DrRacket.  The students need not have access to
   the DrRacket installation directory; the tool will be installed on
   the filesystem in the student's personal space.  If you want to
-  install it once on a shared installation, use setup-plt with the
+  install it once on a shared installation, use @exec{raco setup} with the
   @DFlag{all-users} flag.}
 
 ]
