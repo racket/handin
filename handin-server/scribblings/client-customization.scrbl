@@ -1,6 +1,6 @@
 #lang scribble/doc
 @(require "common.rkt"
-          scribble/BNF)
+          scribble/bnf)
 
 @title{Client Customization}
 
