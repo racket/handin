@@ -510,10 +510,9 @@
                      [(not eval?) (let () body ...)]
                      [language
                       (let ([eval (with-handlers ([void uem-handler])
-                                    (parameterize ([sandbox-run-submodules '(test)])
-                                      (call-with-evaluator/submission
-                                       language (append requires teachpacks)
-                                       submission values)))])
+                                    (call-with-evaluator/submission
+                                     language (append requires teachpacks)
+                                     submission values))])
                         (set-run-status "running tests")
                         (parameterize ([submission-eval (wrap-evaluator eval)])
                           (let-syntax ([with-submission-bindings
