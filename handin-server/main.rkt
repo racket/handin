@@ -372,7 +372,7 @@
   (when (regexp-match #rx"[+/\\:|\"<>]" username)
     (error* "username must not contain these characters: + / \\ : | \" < >"))
   (when (regexp-match
-         #rx"^((nul)|(con)|(prn)|(aux)|(clock[$])|(com[1-9])|(lpt[1-9]))[.]?"
+         #rx"^((nul)|(con)|(prn)|(aux)|(clock[$])|(com[1-9])|(lpt[1-9]))([.]|$)"
          (string-foldcase username))
     (error* "username must not be a Windows special file name"))
   (when (regexp-match #rx"^[ .]|[ .]$" username)
