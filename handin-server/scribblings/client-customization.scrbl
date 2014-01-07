@@ -21,8 +21,8 @@ uniquely.  For example, @filepath{uu-cs1410} is a good name for CS
     part of the name, since @onscreen{Handin} is always added for
     button and menu names.}
 
-  @item{Uncomment the definitions of @racket[tools],
-    @racket[tool-names], and @racket[tool-icons].  (But leave the
+  @item{Uncomment the definitions of @racket[drracket-tools],
+    @racket[drracket-tool-names], and @racket[drracket-tool-icons].  (But leave the
     latter field's definition as @filepath{icon.png}.)}
 
   @item{For @racket[server:port], uncomment the line, and use the
