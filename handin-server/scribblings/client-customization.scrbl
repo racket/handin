@@ -76,7 +76,7 @@ uniquely.  For example, @filepath{uu-cs1410} is a good name for CS
   @commandline{raco pack --collect --at-plt ++setup @nonterm{name} @nonterm{name}.plt @nonterm{name}}
   @;
   You can also add a
-  @tt{--replace} flag to make the installation of the resulting file
+  @DFlag{replace} flag to make the installation of the resulting file
   replace existing files (useful for creating an update package).
 
   Note that if you create an updated copy of the client package (that
