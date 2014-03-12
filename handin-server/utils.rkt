@@ -2,7 +2,7 @@
 
 (require racket/class racket/gui/base racket/pretty
          (prefix-in pc: mzlib/pconvert)
-         (only-in "main.rkt" timeout-control)
+         (only-in "main.rkt" timeout-control get-user-assignment-directory get-assignment-name)
          "private/run-status.rkt"
          "private/config.rkt"
          "private/logger.rkt"
@@ -33,7 +33,10 @@
          user-construct
          test-history-enabled
 
-         timeout-control)
+         timeout-control
+         
+         get-user-assignment-directory
+         get-assignment-name)
 
 (define (unpack-submission str)
   (let* ([base (make-object editor-stream-in-bytes-base% str)]
