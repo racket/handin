@@ -212,6 +212,21 @@ This directory contains the following files and sub-directories:
              (map (lambda (key+val)
                     (apply format "~a: ~s" key+val))
                   alist))))]}}]
+  
+
+  The @secref{grading-utils} uses the following keys:
+  
+  @itemlist[
+
+     @item{@indexed-racket[deadline]: sets a per-assignment deadline for submissions,
+     while optionally allowing a number of days for late submissions.}
+
+     @item{@indexed-racket[max-submissions] sets a per-assignment limit to the
+     quantity of submissions that users can send.}
+  
+     @item{@indexed-racket[report-delay-in-minutes]: specifies the delay after
+     which the report of the submission is written to the user folder of the
+     corresponding assignment.}]
 
   In addition, you can add your own keys --- see @racket[get-conf] for
   details.
