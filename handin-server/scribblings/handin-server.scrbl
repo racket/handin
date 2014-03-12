@@ -20,5 +20,6 @@
 @include-section["server-setup.scrbl"]
 @include-section["checker-utils.scrbl"]
 @include-section["other-utils.scrbl"]
+@include-section["grading-utils.scrbl"]
 
 @index-section[]

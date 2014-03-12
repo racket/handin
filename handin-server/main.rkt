@@ -48,14 +48,14 @@
 
 ;; On startup, check that the users file is not locked:
 (put-preferences null null
-  (lambda (f)
-    (delete-file f)
-    (put-preferences null null
-                     (lambda (f)
-                       (error 'handin-server
-                              "unable to clean up lock file: ~s" f))
-                     "users.rktd"))
-  "users.rktd")
+                 (lambda (f)
+                   (delete-file f)
+                   (put-preferences null null
+                                    (lambda (f)
+                                      (error 'handin-server
+                                             "unable to clean up lock file: ~s" f))
+                                    "users.rktd"))
+                 "users.rktd")
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -66,9 +66,9 @@
   (let ([name (success-dir n)])
     (when (directory-exists? name)
       (if (< n (get-conf 'max-upload-keep))
-        (begin (make-success-dir-available (add1 n))
-               (rename-file-or-directory name (success-dir (add1 n))))
-        (delete-directory/files name)))))
+          (begin (make-success-dir-available (add1 n))
+                 (rename-file-or-directory name (success-dir (add1 n))))
+          (delete-directory/files name)))))
 
 (define ATTEMPT-RE (regexp (format "^~a$" ATTEMPT-DIR)))
 (define SUCCESS-RE (regexp (format "^~a$" (success-dir "[0-9]+"))))
@@ -144,9 +144,9 @@
                (when (>= n 0)
                  (let ([new (get-conf 'all-dirs)])
                    (if (equal? new last-all-dirs)
-                     (begin (sleep 30) (loop (sub1 n)))
-                     (begin (set! last-all-dirs new)
-                            (set! last-connection-num #f))))))
+                       (begin (sleep 30) (loop (sub1 n)))
+                       (begin (set! last-all-dirs new)
+                              (set! last-connection-num #f))))))
              (unless (equal? last-connection-num connection-num)
                (cleanup-all-submissions)
                (set! last-connection-num connection-num))
@@ -161,6 +161,14 @@
 (define (users->dirname users)
   (apply string-append (car users)
          (map (lambda (u) (string-append "+" u)) (cdr users))))
+
+(provide get-user-assignment-directory)
+(define user-assignment-directory (make-parameter #f))
+(define (get-user-assignment-directory) (user-assignment-directory))
+
+(provide get-assignment-name)
+(define assignment-name (make-parameter #f))
+(define (get-assignment-name) (assignment-name))
 
 (define (accept-specific-submission data r r-safe w)
   ;; Note: users are always sorted
@@ -183,8 +191,8 @@
               max "file to handin is too big" len)))
   (parameterize ([current-directory (assignment<->dir assignment)])
     (wait-for-lock dirname
-      (let ([dir (build-path (current-directory) dirname)])
-        (lambda () (cleanup-submission dir))))
+                   (let ([dir (build-path (current-directory) dirname)])
+                     (lambda () (cleanup-submission dir))))
     (when (and (pair? users) (pair? (cdr users)))
       ;; two or more users -- lock each one
       (for-each wait-for-lock users))
@@ -210,9 +218,9 @@
                         [(msg) (write+flush w 'message msg)]
                         [(msg styles)
                          (if (eq? 'final styles)
-                           (write+flush w 'message-final msg)
-                           (begin (write+flush w 'message-box msg styles)
-                                  (read (make-limited-input-port r 50))))])])
+                             (write+flush w 'message-final msg)
+                             (begin (write+flush w 'message-box msg styles)
+                                    (read (make-limited-input-port r 50))))])])
         ;; Clear out old ATTEMPT, if any, and make a new one:
         (when (directory-exists? ATTEMPT-DIR)
           (delete-directory/files ATTEMPT-DIR))
@@ -226,52 +234,54 @@
                                 (auto-reload-value
                                  `(file ,(path->string checker*))
                                  'checker)))])
-          (define-values (pre checker post)
-            (cond [(not checker*) (values #f #f #f)]
-                  [(procedure? checker*) (values #f checker* #f)]
-                  [(and (list? checker*) (= 3 (length checker*)))
-                   (apply values checker*)]
-                  [else (error* "bad checker value: ~e" checker*)]))
-          (when pre
-            (let ([dir (current-directory)])
-              (with-handlers
-                  ([void (lambda (e)
-                           (parameterize ([current-directory dir])
-                             (unless (ormap (lambda (d)
-                                              (and (directory-exists? d)
-                                                   (regexp-match
-                                                    SUCCESS-RE
-                                                    (path->string d))))
-                                            (directory-list))
-                               (parameterize ([current-directory ".."])
-                                 (when (directory-exists? dirname)
-                                   (delete-directory/files dirname)))))
-                           (raise e))])
-                (parameterize ([current-directory ATTEMPT-DIR])
-                  (pre users s)))))
-          (let ([part (if checker
-                        (parameterize ([current-directory ATTEMPT-DIR])
-                          (checker users s))
-                        (get-conf 'default-file-name))])
-            (write+flush w 'confirm)
-            (let ([v (read (make-limited-input-port r 50))])
-              (if (eq? v 'check)
-                (begin
-                  (log-line "saving ~a for ~a" assignment users)
+          (parameterize ([user-assignment-directory (path->complete-path (build-path 'same))]
+                         [assignment-name assignment])
+            (define-values (pre checker post)            
+              (cond [(not checker*) (values #f #f #f)]
+                    [(procedure? checker*) (values #f checker* #f)]
+                    [(and (list? checker*) (= 3 (length checker*)))
+                     (apply values checker*)]
+                    [else (error* "bad checker value: ~e" checker*)]))
+            (when pre
+              (let ([dir (current-directory)])
+                (with-handlers
+                    ([void (lambda (e)
+                             (parameterize ([current-directory dir])
+                               (unless (ormap (lambda (d)
+                                                (and (directory-exists? d)
+                                                     (regexp-match
+                                                      SUCCESS-RE
+                                                      (path->string d))))
+                                              (directory-list))
+                                 (parameterize ([current-directory ".."])
+                                   (when (directory-exists? dirname)
+                                     (delete-directory/files dirname)))))
+                             (raise e))])
                   (parameterize ([current-directory ATTEMPT-DIR])
-                    (cond [part (unless (equal? part "handin")
-                                  (rename-file-or-directory "handin" part))]
-                          [(file-exists? "handin") (delete-file "handin")]))
-                  ;; Shift successful-attempt directories so that there's
-                  ;;  no SUCCESS-0:
-                  (make-success-dir-available 0)
-                  (rename-file-or-directory ATTEMPT-DIR (success-dir 0))
-                  (hook 'submission-committed
-                        `([usernames ,users] [assignment ,assignment]))
-                  (when post
-                    (parameterize ([current-directory (success-dir 0)])
-                      (post users s))))
-                (error* "upload not confirmed: ~s" v)))))))))
+                    (pre users s)))))
+            (let ([part (if checker
+                            (parameterize ([current-directory ATTEMPT-DIR])
+                              (checker users s))
+                            (get-conf 'default-file-name))])
+              (write+flush w 'confirm)
+              (let ([v (read (make-limited-input-port r 50))])
+                (if (eq? v 'check)
+                    (begin
+                      (log-line "saving ~a for ~a" assignment users)
+                      (parameterize ([current-directory ATTEMPT-DIR])
+                        (cond [part (unless (equal? part "handin")
+                                      (rename-file-or-directory "handin" part))]
+                              [(file-exists? "handin") (delete-file "handin")]))
+                      ;; Shift successful-attempt directories so that there's
+                      ;;  no SUCCESS-0:
+                      (make-success-dir-available 0)
+                      (rename-file-or-directory ATTEMPT-DIR (success-dir 0))
+                      (hook 'submission-committed
+                            `([usernames ,users] [assignment ,assignment]))
+                      (when post
+                        (parameterize ([current-directory (success-dir 0)])
+                          (post users s))))
+                    (error* "upload not confirmed: ~s" v))))))))))
 
 (define (retrieve-specific-submission data w)
   ;; Note: users are always sorted
@@ -295,30 +305,30 @@
       ;; find the newest wxme file
       (let loop ([files (directory-list)] [file #f] [time #f])
         (if (null? files)
-          file
-          (let ([f (car files)])
-            (if (and (file-exists? f)
-                     (let ([m (with-input-from-file f
-                                (lambda () (read-bytes mlen)))])
-                       (ormap (lambda (magic)
-                                (and (>= (bytes-length m) (bytes-length magic))
-                                     (equal? magic
-                                             (subbytes m 0
-                                                       (bytes-length magic)))))
-                              magics))
-                     (or (not file)
-                         (> (file-or-directory-modify-seconds f) time)))
-              (loop (cdr files) f (file-or-directory-modify-seconds f))
-              (loop (cdr files) file time))))))
+            file
+            (let ([f (car files)])
+              (if (and (file-exists? f)
+                       (let ([m (with-input-from-file f
+                                  (lambda () (read-bytes mlen)))])
+                         (ormap (lambda (magic)
+                                  (and (>= (bytes-length m) (bytes-length magic))
+                                       (equal? magic
+                                               (subbytes m 0
+                                                         (bytes-length magic)))))
+                                magics))
+                       (or (not file)
+                           (> (file-or-directory-modify-seconds f) time)))
+                  (loop (cdr files) f (file-or-directory-modify-seconds f))
+                  (loop (cdr files) file time))))))
     (if file
-      (let ([len (file-size file)])
-        (write+flush w len)
-        (display "$" w)
-        (display (with-input-from-file file (lambda () (read-bytes len))) w)
-        (flush-output w)
-        (hook 'submission-retrieved
-              `([usernames ,users] [assignment ,assignment])))
-      (error* "no ~a submission file found for ~a" assignment users))))
+        (let ([len (file-size file)])
+          (write+flush w len)
+          (display "$" w)
+          (display (with-input-from-file file (lambda () (read-bytes len))) w)
+          (flush-output w)
+          (hook 'submission-retrieved
+                `([usernames ,users] [assignment ,assignment])))
+        (error* "no ~a submission file found for ~a" assignment users))))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -437,7 +447,7 @@
       (unless c (set! c (dynamic-require 'ffi/crypt 'crypt)))
       ;; crypt is not reentrant
       (call-with-semaphore sema
-        (lambda () (bytes->string/utf-8 (c passwd salt)))))))
+                           (lambda () (bytes->string/utf-8 (c passwd salt)))))))
 (define (has-password? raw md5 passwords)
   (define (good? passwd)
     (define (bad-password msg)
@@ -475,10 +485,10 @@
        (let* ([key (read r-safe)] [val (read r-safe)])
          (unless (symbol? key) (perror "bad key value: ~e" key))
          (unless (if (eq? 'user-fields key)
-                   (and (list? val)
-                        (- (length val) (length (get-conf 'user-fields)))
-                        (andmap string? val))
-                   (string? val))
+                     (and (list? val)
+                          (- (length val) (length (get-conf 'user-fields)))
+                          (andmap string? val))
+                     (string? val))
            (perror "bad value for set: ~e" val))
          (when (a-ref data key #f) (perror "multiple values for ~e" key))
          (case key
@@ -563,8 +573,8 @@
   (define (mem m)
     (let loop ([m m] [q 'B] [qs '(KB MB GB TB)])
       (if (and (>= m 1024) (pair? qs))
-        (loop (round (/ m 1024)) (car qs) (cdr qs))
-        (format "~a~a" m q))))
+          (loop (round (/ m 1024)) (car qs) (cdr qs))
+          (format "~a~a" m q))))
   (define (watch-loop)
     (define session-thread (channel-get session-channel))
     (let loop ([timed-out? #f])
@@ -592,17 +602,17 @@
                   (log-line "running ~a ~a"
                             (mem (current-memory-use session-cust))
                             (if no-limit-warning?
-                              "(total)"
-                              (list (mem (current-memory-use orig-custodian))
-                                    (mem (current-memory-use)))))
+                                "(total)"
+                                (list (mem (current-memory-use orig-custodian))
+                                      (mem (current-memory-use)))))
                   (loop #f)])))
   (define (timeout-control msg)
     (if (rational? msg)
-      (set! timeout (+ (current-inexact-milliseconds) (* 1000 msg)))
-      (case msg
-        [(reset) (timeout-control (get-conf 'session-timeout))]
-        [(disable #f) (set! timeout #f)]
-        [else (error 'timeout-control "bad argument: ~s" msg)])))
+        (set! timeout (+ (current-inexact-milliseconds) (* 1000 msg)))
+        (case msg
+          [(reset) (timeout-control (get-conf 'session-timeout))]
+          [(disable #f) (set! timeout #f)]
+          [else (error 'timeout-control "bad argument: ~s" msg)])))
   (current-timeout-control timeout-control)
   (timeout-control 'reset)
   (unless no-limit-warning?
@@ -657,8 +667,8 @@
          (with-handlers ([exn:fail?
                           (lambda (exn)
                             (let ([msg (if (exn? exn)
-                                         (exn-message exn)
-                                         (format "~.s" exn))])
+                                           (exn-message exn)
+                                           (format "~.s" exn))])
                               (kill-watcher)
                               (log-line "ERROR: ~a" msg)
                               (write+flush w msg)
@@ -671,8 +681,8 @@
            ;; Check version:
            (let ([ver (read r-safe)])
              (if (eq? 'ver1 ver)
-               (write+flush w 'ver1)
-               (error 'handin "unknown handin version: ~e" ver)))
+                 (write+flush w 'ver1)
+                 (error 'handin "unknown handin version: ~e" ver)))
            (handle-connection r r-safe w)
            (log-line "normal exit")
            (kill-watcher)))))))
