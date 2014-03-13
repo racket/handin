@@ -1,5 +1,6 @@
 #lang scribble/doc
-@(require "common.rkt")
+@(require "common.rkt"
+           (for-label handin-server/grading-utils))
 
 @title[#:tag "grading-utils"]{Grading Utilities}
 
