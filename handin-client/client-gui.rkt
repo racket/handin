@@ -685,22 +685,25 @@
          [parent parent]))
   cached-user-fields)
 
+
 (define (scale-by-half file)
   (let* ([bm (make-object bitmap% file 'unknown/mask)]
          [w (send bm get-width)]
          [h (send bm get-height)]
-         [bm2 (make-object bitmap% (quotient w 2) (quotient h 2))]
+         [new-h (quotient h 2)]
+         [new-w (quotient (* w new-h) h)]
+         [bm2 (make-object bitmap% new-w new-h)]
          [mbm2 (and (send bm get-loaded-mask)
-                    (make-object bitmap% (quotient w 2) (quotient h 2)))]
+                    (make-object bitmap% new-w new-h))]
          [mdc (make-object bitmap-dc% bm2)])
     (send mdc draw-bitmap-section-smooth bm 
-          0 0 (quotient w 2) (quotient h 2)
+          0 0 new-w new-h
           0 0 w h)
     (send mdc set-bitmap #f)
     (when mbm2
       (send mdc set-bitmap mbm2)
       (send mdc draw-bitmap-section-smooth (send bm get-loaded-mask)
-            0 0 (quotient w 2) (quotient h 2)
+            0 0 new-w new-h
             0 0 w h)
       (send mdc set-bitmap #f)
       (send bm2 set-loaded-mask mbm2))
