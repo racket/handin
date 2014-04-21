@@ -686,11 +686,11 @@
   cached-user-fields)
 
 
-(define (scale-by-half file)
+(define (scale-to-16 file)
   (let* ([bm (make-object bitmap% file 'unknown/mask)]
          [w (send bm get-width)]
          [h (send bm get-height)]
-         [new-h (quotient h 2)]
+         [new-h 16]
          [new-w (quotient (* w new-h) h)]
          [bm2 (make-object bitmap% new-w new-h)]
          [mbm2 (and (send bm get-loaded-mask)
@@ -709,7 +709,7 @@
       (send bm2 set-loaded-mask mbm2))
     bm2))
 
-(define handin-icon (scale-by-half (in-this-collection "icon.png")))
+(define handin-icon (scale-to-16 (in-this-collection "icon.png")))
 
 (define (editors->string editors)
   (let* ([base (make-object editor-stream-out-bytes-base%)]
