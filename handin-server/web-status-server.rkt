@@ -89,8 +89,8 @@
                        user hi)))
      (if (and image (file-exists? image))
          (let ([rel (relativize-path image)])
-           `(a ([href ,(make-k k rel)])
-               (img ([src ,rel]))))
+           (list `(a ([href ,(make-k k rel)])
+                     (img ([src ,rel])))))
          null)
      (if upload-suffixes
          (let ([dir (or dir 
