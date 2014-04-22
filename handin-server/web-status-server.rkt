@@ -88,9 +88,9 @@
          (list (format "No handins accepted so far for user ~s, assignment ~s"
                        user hi)))
      (if (and image (file-exists? image))
-         (let ([rel (relativize-path image)])
-           (list `(a ([href ,(make-k k rel)])
-                     (img ([src ,rel])))))
+         (let ([image-k (make-k k (relativize-path image))])
+           (list `(a ([href ,image-k])
+                     (img ([src ,image-k])))))
          null)
      (if upload-suffixes
          (let ([dir (or dir 
