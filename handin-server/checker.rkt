@@ -722,6 +722,13 @@
 (define-syntax-rule (!integer id)
   (begin (!defined id) (!integer* id)))
 
+(provide !image* !image)
+(define-syntax-rule (!image* expr)
+  (unless (image? ((submission-eval) `expr))
+    (error* "~.s is expected to be bound to an image" (->disp 'expr))))
+(define-syntax-rule (!image id)
+  (begin (!defined id) (!image* id)))
+
 (provide !eval)
 (define-syntax-rule (!eval expr) ((submission-eval) `expr))
 
