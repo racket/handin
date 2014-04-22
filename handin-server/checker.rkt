@@ -1,5 +1,7 @@
 #lang racket/base
 
+(require (only-in 2htdp/image image?))
+
 (require (for-syntax racket/base) "utils.rkt"
          racket/file racket/class racket/gui/base)
 
