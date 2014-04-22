@@ -63,10 +63,12 @@
 
 (define (handin-link k user hi upload-suffixes)
   (let* ([dir (find-handin-entry hi user)]
+         [image (and dir (file-exists? (build-path dir "handin.png")))]
          [l (and dir (with-handlers ([exn:fail? (lambda (x) null)])
                        (parameterize ([current-directory dir])
                          (sort (filter (lambda (f)
                                          (and (not (equal? f "grade"))
+                                              (not (equal? f "handin.png"))
                                               (file-exists? f)))
                                        (map path->string (directory-list)))
                                string<?))))])
@@ -85,6 +87,11 @@
                l))
          (list (format "No handins accepted so far for user ~s, assignment ~s"
                        user hi)))
+     (if image
+         (let ([rel (relativize-path image)])
+           `(a ([href ,(make-k k rel)])
+               (img ([src ,rel]))))
+         null)
      (if upload-suffixes
          (let ([dir (or dir 
                         (build-path (assignment<->dir hi) user))])
