@@ -14,16 +14,20 @@
          handin-server/private/hooker
          "run-servlet.rkt")
 
+;; Looks up key in alist, returns #f if not found.
 (define (aget alist key)
   (cond [(assq key alist) => cdr] [else #f]))
 
+;; Remove spaces before and after s.
 (define (clean-str s)
   (regexp-replace #rx" +$" (regexp-replace #rx"^ +" s "") ""))
 
+;; Construct page title.
 (define (make-page title . body)
   `(html (head (title ,title))
          (body ([bgcolor "white"]) (h1 ((align "center")) ,title) ,@body)))
 
+;; Acess user data for a user.
 (define get-user-data
   (let ([users-file (build-path server-dir "users.rktd")])
     (unless (file-exists? users-file)
@@ -32,9 +36,13 @@
       (and user (get-preference (string->symbol user) (lambda () #f) 'timestamp
                                 users-file)))))
 
+;; Make path relative to server directory.
 (define (relativize-path p)
   (path->string (find-relative-path (normalize-path server-dir) p)))
 
+;; Construct an URL for downloading files.
+;;
+;; k should eventually call handle-status-request.
 (define (make-k k tag #:mode [mode "download"])
   (let ([sep (if (regexp-match? #rx"^[^#]*[?]" k) "&" "?")])
     (format "~a~atag=~a~amode=~a" 
@@ -44,6 +52,8 @@
             ";"
             (uri-encode mode))))
 
+;; Find the directory with files look-for handed in for hi.
+;;
 ;; `look-for' can be a username as a string (will find "bar+foo" for "foo"), or
 ;; a regexp that should match the whole directory name (used with "^solution"
 ;; below)
@@ -61,6 +71,8 @@
                    (build-path dir d))))
           (directory-list dir)))))
 
+;; Display links to all files user handed in for hi
+;; and/or links to upload such files now.
 (define (handin-link k user hi upload-suffixes)
   (let* ([dir (find-handin-entry hi user)]
          [image (and dir (build-path dir "handin.png"))]
@@ -101,6 +113,7 @@
                      "Upload...")))
          null))))
 
+;; ???
 (define (solution-link k hi)
   (let ([soln (and (member (assignment<->dir hi) (get-conf 'inactive-dirs))
                    (find-handin-entry hi #rx"^solution"))]
@@ -124,6 +137,7 @@
                              files)))))]
           [else none])))
 
+;; Load grade file for handin hi of user, or "--" by default.
 (define (handin-grade user hi)
   (let* ([dir (find-handin-entry hi user)]
          [grade (and dir
@@ -134,6 +148,7 @@
                                 (read-string (file-size filename)))))))])
     (or grade "--")))
 
+;; Display the status of one user and one handin.
 (define (one-status-page user for-handin)
   (let* ([next (send/suspend
                 (lambda (k)
@@ -145,6 +160,7 @@
                            ,(format "All handins for ~a" user))))))])
     (handle-status-request user next null)))
 
+;; Display the status of one user and all handins.
 (define (all-status-page user)
   (define (cell  . texts) `(td ([bgcolor "white"]) ,@texts))
   (define (rcell . texts) `(td ([bgcolor "white"] [align "right"]) ,@texts))
@@ -167,6 +183,9 @@
                            (map (row k #f #f) (get-conf 'inactive-dirs)))))))])
     (handle-status-request user next upload-suffixes)))
 
+;; Handle file uploading and downloading.
+;;
+;; This function cooperates with make-k above.
 (define (handle-status-request user next upload-suffixes)
   (let* ([mode (aget (request-bindings next) 'mode)]
          [tag (aget (request-bindings next) 'tag)])
@@ -178,6 +197,7 @@
      [else
       (error 'status "unknown mode: ~s" mode)])))
 
+;; ???
 (define (check path elts allow-active? allow-inactive?)
   (let loop ([path path] [elts (reverse elts)])
     (let*-values ([(base name dir?) (split-path path)]
@@ -199,7 +219,8 @@
                           (member check (regexp-split #rx" *[+] *" name)))]
                      [else #f])
                (loop base (cdr elts)))))))
-  
+
+;; Handle downloading of files.
 (define (download who tag)
   (define file (build-path server-dir tag))
   (with-handlers ([exn:fail?
@@ -235,6 +256,7 @@
                                  (path->string name))))))
         (list data)))))
 
+;; Handle uploading of files.
 (define (upload who tag suffixes)
   (define next
     (send/suspend
@@ -281,6 +303,7 @@
           (all-status-page who))
         (error "no file provided"))))
 
+;; Dispatch directly after login.
 (define (status-page user for-handin)
   (log-line "Status access: ~s" user)
   (hook 'status-login `([username ,(string->symbol user)]))
@@ -288,6 +311,7 @@
     (one-status-page user for-handin)
     (all-status-page user)))
 
+;; Display login.
 (define (login-page for-handin errmsg)
   (let* ([request
           (send/suspend
@@ -324,6 +348,7 @@
            (status-page user for-handin)]
           [else (login-page for-handin "Bad username or password")])))
 
+;; Set up session counter.
 (define web-counter
   (let ([sema (make-semaphore 1)] [count 0])
     (lambda ()
@@ -332,13 +357,19 @@
         (lambda () (set! count (add1 count)) (format "w~a" count))
         (lambda () (semaphore-post sema))))))
 
+;; Fetch current error-print-context-length.
+;;
+;; The error-print-context-length parameter is set to 0 in run
+;; below, but reset to default-context-length in dispatcher.
 (define default-context-length (error-print-context-length))
 
+;; Entry point for one connection.
 (define (dispatcher request)
   (error-print-context-length default-context-length)
   (parameterize ([current-session (web-counter)])
     (login-page (aget (request-bindings request) 'handin) #f)))
 
+;; Entry point for the whole HTTPS server.
 (provide run)
 (define (run)
   (if (get-conf 'use-https)
