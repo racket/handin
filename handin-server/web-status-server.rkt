@@ -162,15 +162,15 @@
 
 ;; Display the status of one user and all handins.
 (define (all-status-page user)
-  (define (cell  . texts) `(td ([bgcolor "white"]) ,@texts))
-  (define (rcell . texts) `(td ([bgcolor "white"] [align "right"]) ,@texts))
-  (define (header . texts) `(td ([bgcolor "#f0f0f0"]) (big (strong ,@texts))))
+  (define (handin-table-cell  . texts) `(td ([bgcolor "white"]) ,@texts))
+  (define (handin-table-rcell . texts) `(td ([bgcolor "white"] [align "right"]) ,@texts))
+  (define (handin-table-header . texts) `(td ([bgcolor "#f0f0f0"]) (big (strong ,@texts))))
   (define ((row k active? upload-suffixes) dir)
     (let ([hi (assignment<->dir dir)])
       `(tr ([valign "top"])
-         ,(apply header hi (if active? `((br) (small (small "[active]"))) '()))
-         ,(apply cell (handin-link k user hi upload-suffixes))
-         ,(rcell (handin-grade user hi)))))
+         ,(apply handin-table-header hi (if active? `((br) (small (small "[active]"))) '()))
+         ,(apply handin-table-cell (handin-link k user hi upload-suffixes))
+         ,(handin-table-rcell (handin-grade user hi)))))
   (define upload-suffixes (get-conf 'allow-web-upload))
   (let* ([next
           (send/suspend
@@ -178,7 +178,7 @@
              (make-page
               (format "All Handins for ~a" user)
               `(table ([bgcolor "#ddddff"] [cellpadding "6"] [align "center"])
-                 (tr () ,@(map header '(nbsp "Files" "Grade")))
+                 (tr () ,@(map handin-table-header '(nbsp "Files" "Grade")))
                  ,@(append (map (row k #t upload-suffixes) (get-conf 'active-dirs))
                            (map (row k #f #f) (get-conf 'inactive-dirs)))))))])
     (handle-status-request user next upload-suffixes)))
