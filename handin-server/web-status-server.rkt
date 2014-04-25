@@ -160,17 +160,29 @@
                            ,(format "All handins for ~a" user))))))])
     (handle-status-request user next null)))
 
+;; Display a left-aligned cell in a handin table
+(define (handin-table-cell  . texts)
+  `(td ([bgcolor "white"]) ,@texts))
+
+;; Display a right-aligned cell in a handin table.
+(define (handin-table-rcell . texts)
+  `(td ([bgcolor "white"] [align "right"]) ,@texts))
+
+;; Display an header cell in a handin table.
+(define (handin-table-header . texts)
+  `(td ([bgcolor "#f0f0f0"]) (big (strong ,@texts))))
+
+;; Displays a row in a table of handins.
+(define (((handin-table-row user) k active? upload-suffixes) dir)
+  (let ([hi (assignment<->dir dir)])
+    `(tr ([valign "top"])
+       ,(apply handin-table-header hi (if active? `((br) (small (small "[active]"))) '()))
+       ,(apply handin-table-cell (handin-link k user hi upload-suffixes))
+       ,(handin-table-rcell (handin-grade user hi)))))
+
 ;; Display the status of one user and all handins.
 (define (all-status-page user)
-  (define (handin-table-cell  . texts) `(td ([bgcolor "white"]) ,@texts))
-  (define (handin-table-rcell . texts) `(td ([bgcolor "white"] [align "right"]) ,@texts))
-  (define (handin-table-header . texts) `(td ([bgcolor "#f0f0f0"]) (big (strong ,@texts))))
-  (define ((row k active? upload-suffixes) dir)
-    (let ([hi (assignment<->dir dir)])
-      `(tr ([valign "top"])
-         ,(apply handin-table-header hi (if active? `((br) (small (small "[active]"))) '()))
-         ,(apply handin-table-cell (handin-link k user hi upload-suffixes))
-         ,(handin-table-rcell (handin-grade user hi)))))
+  (define row (handin-table-row user))
   (define upload-suffixes (get-conf 'allow-web-upload))
   (let* ([next
           (send/suspend
