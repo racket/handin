@@ -12,4 +12,6 @@
                "pconvert-lib"
                "sandbox-lib"
                "web-server-lib"))
-(define build-deps '("scribble-lib"))
+(define build-deps '("gui-doc"
+                     "racket-doc"
+                     "scribble-lib"))
