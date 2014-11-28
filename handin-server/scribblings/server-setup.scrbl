@@ -170,7 +170,7 @@ This directory contains the following files and sub-directories:
     @filepath{users.rktd} file and fill in such information.  (The third
     element for such descriptors is ignored.)}
 
-  @item{@indexed-racket[hook-file] --- a path (relative to handin
+  @item{@indexed-racket[hook-file] --- a path (relative to the handin
     server directory or absolute) that specifies a filename that
     contains a `hook' module.  This is useful as a general device for
     customizing the server through Racket code.  The file is expected
@@ -217,11 +217,29 @@ This directory contains the following files and sub-directories:
              '("course-staff@university.edu") '() '()
              (map (lambda (key+val)
                     (apply format "~a: ~s" key+val))
-                  alist))))]}}]
-  
+                  alist))))]}}
+
+  @item{@indexed-racket[extra-dispatcher-file] --- a path (relative to
+    the handin server directory or absolute) that specifies a filename
+    that contains a `dispatcher' module.  When specified, this file will
+    be loaded, and it is expected to provide a @racket[dispatcher]
+    function, which can be used by the web server, i.e., one that
+    satisfies @racket[dispatcher/c].  This dispatcher will get used in
+    the embedded handin server, before the handin servlet.  It can
+    therefore be used to handle additional servlets that implement
+    additional functionality.  Here is a sample skeleton:
+
+      @racketmod[
+        racket/base
+        (require web-server/http web-server/servlet-dispatch)
+        (provide dispatcher)
+        (define (start req)
+          ;; implement the "foo" operation
+          ....)
+        (define dispatcher (dispatch/servlet start #:regexp #rx"^/foo"))]}]
 
   The @secref{grading-utils} uses the following keys:
-  
+
   @itemlist[
 
      @item{@indexed-racket[deadline]: sets a per-assignment deadline for submissions,
