@@ -8,7 +8,7 @@
 (define package-filename (#%info-lookup 'package-filename))
 (define dialog-title (string-append name " Updater"))
 (define (file->inport filename)
-  (get-pure-port
+  (get-pure-port #:redirections 5
    (string->url
     (string-append (regexp-replace #rx"/?$" web-address "/") filename))))
 (define update-key (make-my-key 'update-check))
