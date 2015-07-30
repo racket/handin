@@ -10,9 +10,12 @@
 2. Install this script in some folder of your choice. We'll refer to it as `${PATH_TO_HANDIN}`.
 3. Go to your `handin-config` directory, where you have the configuration file `config.rktd`.
 4. Adjust `config.rktd` as needed, and include the correct `server-cert.pem`.
-5. Run this tool with:
+5. Also adjust `${PATH_TO_HANDIN}/handin-client/info.rkt` following
+   http://pkg-build.racket-lang.org/doc/handin-server/Client_Customization.html.
+   You'll need again some of the same info.
+6. Run this tool with:
    ```sh
    racket -t ${PATH_TO_HANDIN}/generate-handin-client/main.rkt
    ```
-6. This will produce a zip file and its checksum, for clients to install. The
+7. This will produce a zip file and its checksum, for clients to install. The
    name will be the `client-name` from `config.rktd`.
