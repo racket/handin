@@ -6,7 +6,7 @@
 (define (reload-module modspec path)
   ;; the path argument is not needed (could use resolve-module-path here), but
   ;; its always known when this function is called
-  (let* ([name ((current-module-name-resolver) modspec #f #f)])
+  (let* ([name ((current-module-name-resolver) modspec #f #f #t)])
     (log-line "(re)loading module from ~a" modspec)
     (parameterize ([current-module-declare-name name]
                    [compile-enforce-module-constants #f])
