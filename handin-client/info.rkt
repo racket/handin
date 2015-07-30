@@ -5,24 +5,24 @@
 ;; Also replace the "server-cert.pem" files.
 
 ;; Your course name (used for menus, button label, collection name etc)
-(define name "Course")
+(define name "Info1 WS 2015")
 
 ;; The handin tool is disabled by default, uncomment these three lines to
 ;; enable it
-;(define drracket-tools      `("client-gui.rkt"))
-;(define drracket-tool-names `(,name))
-;(define drracket-tool-icons `("icon.png"))
+(define drracket-tools      `("client-gui.rkt"))
+(define drracket-tool-names `(,name))
+(define drracket-tool-icons `("icon.png"))
 ;; Modify the provided "icon.png" file to your school/lab/etc logo.
 
 ;; You must define a server:port for the client to be functional
-;(define server:port "localhost:7979")
+(define server:port "handin-ps.informatik.uni-tuebingen.de:7979")
 
 ;; The following are optional. Uncomment and fill in
 ;; the values to add a menu item under "Help" to open
 ;; the specified web page (using the user's chosen web
 ;; browser.)
-;(define web-menu-name (string-append name " Homepage"))
-;(define web-address "http://www.university.edu/course/")
+(define web-menu-name (string-append name " Homepage"))
+(define web-address "http://ps.informatik.uni-tuebingen.de/teaching/ws15/info1/")
 
 ;; Auto-updater section (see handin-server/doc.txt for details)
 ;(define enable-auto-update #t) ; enable auto-update?
