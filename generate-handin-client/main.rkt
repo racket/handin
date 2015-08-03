@@ -171,7 +171,7 @@
 (delete-directory/files (build-path collection-dir "compiled"))
 
 ; Create package
- (pkg-create-command
+(pkg-create-command
    #:format 'zip
    #:from-dir #t
    #:dest target-dir
