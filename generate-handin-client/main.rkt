@@ -135,6 +135,10 @@
       (print-info `(define drracket-tool-names `(,name)))
       (print-info `(define drracket-tool-icons `("icon-splash.png")))
 
+      (print-info `(define enable-auto-update #t))
+      (print-info `(define version-filename "handin-version"))
+      (print-info `(define package-filename "handin.plt"))
+
       ; server:port
       (print-info `(define server:port ,(format "~a:~a" server-name port-number)))
 
