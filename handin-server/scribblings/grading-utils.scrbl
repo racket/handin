@@ -206,7 +206,7 @@ way:
 (define-syntax (write-report stx)
    ...
    (define report-delay (get-report-delay-in-minutes))
-   (start-timer (* 60 report-delay) ...))
+   (start-timer (start-timer-manager) (* 60 report-delay) ...))
 ]
 
 The default behavior is obtained because @racket[get-report-delay-in-minutes]
