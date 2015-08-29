@@ -1,5 +1,7 @@
 # Use steps
 
+To generate the handin client package as a zip file:
+
 0.  Choose which variant of the `handin` package to use. You can use the
     official variant, https://github.com/plt/handin; but in this document, I'll
     assume you want to use our variant: https://github.com/ps-tuebingen/handin,
@@ -25,9 +27,11 @@
     git clone https://github.com/ps-tuebingen/handin-config.git
     ```
 
-    and setup `config.rktd` according to docs on [server setup][1]. Also include
-    the correct `server-cert.pem`. You will also need `private-key.pem` for the
-    server, but it's not needed for the client.
+    That repo contains complete configs for our Tübingen course; make sure to checkout the branch you want
+    among ones named deploy-*.
+    If instead you are an external user, setup `config.rktd` according to docs on [server setup][1]. Also include
+    the correct `server-cert.pem`. On the server (but not on the client) you will also need `private-key.pem`, which
+    you should never commit to a public Git repo!
 
 4.  Go to your `handin-config` directory, where you have the configuration file `config.rktd`:
 
