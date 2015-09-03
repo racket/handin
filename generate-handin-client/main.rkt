@@ -140,7 +140,7 @@
       ; homepage
       (when web-address
         (print-info `(define web-menu-name ,web-menu-name))
-        (print-info `(define web-address , web-address)))
+        (print-info `(define web-address ,web-address)))
 
       ; dependencies
       (print-info `(define requires '(("mred") ("openssl")))))))
