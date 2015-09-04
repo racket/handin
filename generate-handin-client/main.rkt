@@ -81,6 +81,11 @@
 (define web-address
   (get-conf 'web-address #f))
 
+; Enable auto-update? & Auto-update relative URL.
+; Depends on web-address being defined.
+;(define auto-update-address #f)
+(define auto-update-address "racket")
+
 ; Name of the course's homepage
 (define web-menu-name
   (get-conf 'web-menu-name (string-append course-name " Homepage")))
@@ -145,7 +150,14 @@
       ; homepage
       (when web-address
         (print-info `(define web-menu-name ,web-menu-name))
-        (print-info `(define web-address , web-address)))
+        (print-info `(define web-address ,web-address))
+
+        (when auto-update-address
+          ;; Auto-updater section (see handin-server/doc.txt for details)
+          (print-info `(define enable-auto-update #t))
+          (print-info `(define version-filename ,(string-append auto-update-address "/" client-name ".version")))
+          (print-info `(define package-filename ,(string-append auto-update-address "/" client-name ".plt")))))
+
 
       ; dependencies
       (print-info `(define requires '(("mred") ("openssl")))))))
