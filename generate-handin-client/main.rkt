@@ -84,7 +84,7 @@
 ; Enable auto-update? & Auto-update relative URL.
 ; Depends on web-address being defined.
 ;(define auto-update-address #f)
-(define auto-update-address "racket")
+(define auto-update-address "handinplugin")
 
 ; Name of the course's homepage
 (define web-menu-name
