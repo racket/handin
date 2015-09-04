@@ -140,10 +140,6 @@
       (print-info `(define drracket-tool-names `(,name)))
       (print-info `(define drracket-tool-icons `("icon-splash.png")))
 
-      (print-info `(define enable-auto-update #t))
-      (print-info `(define version-filename "handin-version"))
-      (print-info `(define package-filename "handin.plt"))
-
       ; server:port
       (print-info `(define server:port ,(format "~a:~a" server-name port-number)))
 
@@ -157,7 +153,6 @@
           (print-info `(define enable-auto-update #t))
           (print-info `(define version-filename ,(string-append auto-update-address "/" client-name ".version")))
           (print-info `(define package-filename ,(string-append auto-update-address "/" client-name ".plt")))))
-
 
       ; dependencies
       (print-info `(define requires '(("mred") ("openssl")))))))
