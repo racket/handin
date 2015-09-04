@@ -156,7 +156,7 @@
 
 (let ([path (build-path collection-dir "version")]
       [now-date (seconds->date (current-seconds))])
-  (printf "writing collection info to ~a~n" path)
+  (printf "writing version info to ~a~n" path)
   (with-output-to-file path
     #:exists 'truncate/replace
     (lambda ()
