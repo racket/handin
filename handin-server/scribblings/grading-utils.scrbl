@@ -61,9 +61,9 @@ The following example illustrates a checker module using this infrastructure:
    
    (code:comment "Initialize max score")
    (set-test-max-score! 100)
-   
+
    (code:comment "Failure discounts 25 points")
-   (@test "Sample case 1"
+   (\@test "Sample case 1"
           "Error using even? predicate"
           (bar '(1 2 3 4) even?)
           '((2 4)(1 3))
@@ -206,7 +206,7 @@ way:
 (define-syntax (write-report stx)
    ...
    (define report-delay (get-report-delay-in-minutes))
-   (start-timer (* 60 report-delay) ...))
+   (start-timer (start-timer-manager) (* 60 report-delay) ...))
 ]
 
 The default behavior is obtained because @racket[get-report-delay-in-minutes]
