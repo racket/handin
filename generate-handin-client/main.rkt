@@ -2,6 +2,7 @@
 
 (require pkg)
 (require setup/getinfo)
+(require srfi/54)
 
 ; print something in a style that works for #lang setup/infotab
 (define (print-info v)
@@ -83,7 +84,7 @@
 ; Enable auto-update? & Auto-update relative URL.
 ; Depends on web-address being defined.
 ;(define auto-update-address #f)
-(define auto-update-address "racket")
+(define auto-update-address "handinplugin")
 
 ; Name of the course's homepage
 (define web-menu-name
@@ -153,9 +154,26 @@
           (print-info `(define version-filename ,(string-append auto-update-address "/" client-name ".version")))
           (print-info `(define package-filename ,(string-append auto-update-address "/" client-name ".plt")))))
 
-
       ; dependencies
       (print-info `(define requires '(("mred") ("openssl")))))))
+
+; Format v, zero-padding it to the left to have at least n-digits digits in total.
+(define (zero-pad n-digits v)
+  (cat v n-digits #\0))
+
+(let ([path (build-path collection-dir "version")]
+      [now-date (seconds->date (current-seconds))])
+  (printf "writing version info to ~a~n" path)
+  (with-output-to-file path
+    #:exists 'truncate/replace
+    (lambda ()
+      (print-info (format "~a~a~a~a~a"
+                          (zero-pad 4 (date-year now-date))
+                          (zero-pad 2 (date-month now-date))
+                          (zero-pad 2 (date-day now-date))
+                          (zero-pad 2 (date-hour now-date))
+                          (zero-pad 2 (date-minute now-date)))))))
+
 
 ; Copy icon for splash screen to collection
 (let* ([source (build-path conf-dir icon-splash)]
