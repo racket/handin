@@ -729,12 +729,27 @@
         (dynamic-require `(lib "updater.rkt" ,this-collection-name) 'bg-update)
         void))
 
+    (define (get-lang-prefix modname)
+      (let* ([pref (preferences:get (drracket:language-configuration:get-settings-preferences-symbol))]
+             [lang (drracket:language-configuration:language-settings-language pref)]
+             [settings (drracket:language-configuration:language-settings-settings pref)])
+        (send lang get-metadata modname settings)))
+
+    (define (with-fake-header editor)
+      (let ([new-editor (send editor copy-self)]
+            [text (get-lang-prefix 'handin)])
+        (when text
+          (send new-editor set-position 0)
+          (send new-editor insert-port (open-input-string text)))
+        new-editor))
+
     (define (editors->string definitions interactions)
       (let* ([base (make-object editor-stream-out-bytes-base%)]
-             [stream (make-object editor-stream-out% base)])
+             [stream (make-object editor-stream-out% base)]
+             [definitions-with-fake-header (with-fake-header definitions)])
         (write-editor-version stream base)
         (write-editor-global-header stream)
-        (for ([ed (in-list (list definitions interactions))]) (send ed write-to-file stream))
+        (for ([ed (in-list (list definitions-with-fake-header interactions))]) (send ed write-to-file stream))
         (write-editor-global-footer stream)
         (send base get-bytes)))
 
