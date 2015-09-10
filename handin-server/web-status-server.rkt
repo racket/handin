@@ -361,9 +361,9 @@
                 (has-password?
                  passwd
                  (md5 passwd)
-                 (let ([mp (get-conf 'master-password)]
-                       [up (list (car user-data))])
-                   (if mp (cons mp up) up))))
+                 (let ([master-pwd (get-conf 'master-password)]
+                       [user-pwd (list (car user-data))])
+                   (if master-pwd (cons master-pwd user-pwd) user-pwd))))
            (status-page user for-handin)]
           [else (login-page for-handin "Bad username or password")])))
 
