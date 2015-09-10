@@ -708,15 +708,6 @@
 
 (define handin-icon (scale-by-half (in-this-collection "icon.png")))
 
-(define (editors->string editors)
-  (let* ([base (make-object editor-stream-out-bytes-base%)]
-         [stream (make-object editor-stream-out% base)])
-    (write-editor-version stream base)
-    (write-editor-global-header stream)
-    (for ([ed (in-list editors)]) (send ed write-to-file stream))
-    (write-editor-global-footer stream)
-    (send base get-bytes)))
-
 (define (string->editor! str defs)
   (let* ([base (make-object editor-stream-in-bytes-base% str)]
          [stream (make-object editor-stream-in% base)])
@@ -737,6 +728,15 @@
       (if updater?
         (dynamic-require `(lib "updater.rkt" ,this-collection-name) 'bg-update)
         void))
+
+    (define (editors->string editors)
+      (let* ([base (make-object editor-stream-out-bytes-base%)]
+             [stream (make-object editor-stream-out% base)])
+        (write-editor-version stream base)
+        (write-editor-global-header stream)
+        (for ([ed (in-list editors)]) (send ed write-to-file stream))
+        (write-editor-global-footer stream)
+        (send base get-bytes)))
 
     (define tool-button-label (bitmap-label-maker button-label/h handin-icon))
 
