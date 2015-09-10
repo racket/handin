@@ -35,8 +35,9 @@ can update with `git pull` and variants as needed.
 
 ## Install packages
 
-To assemble packages, you need first to install them. This must be repeated when
-the code changes or when updating your Racket version.
+To assemble packages, you need first to add `handin` to the package database.
+This needs to be repeated when updating your Racket version, but not when the code changes:
+This step adds a link to the checkout, so changes are integrated automatically.
 
 1.  With `$PATH_TO_HANDIN` setup as before, install the handin package:
     ```sh
@@ -56,7 +57,7 @@ the code changes or when updating your Racket version.
 
 2.  Run this tool with:
     ```sh
-    racket -t ${PATH_TO_HANDIN}/generate-handin-client/main.rkt
+    racket -l generate-handin-client
     ```
 
 This will produce a zip file and its checksum, for clients to install. The name
