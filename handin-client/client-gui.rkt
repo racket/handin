@@ -711,15 +711,6 @@
 
 (define handin-icon (scale-to-16 (in-this-collection "icon.png")))
 
-(define (editors->string editors)
-  (let* ([base (make-object editor-stream-out-bytes-base%)]
-         [stream (make-object editor-stream-out% base)])
-    (write-editor-version stream base)
-    (write-editor-global-header stream)
-    (for ([ed (in-list editors)]) (send ed write-to-file stream))
-    (write-editor-global-footer stream)
-    (send base get-bytes)))
-
 (define (string->editor! str defs)
   (let* ([base (make-object editor-stream-in-bytes-base% str)]
          [stream (make-object editor-stream-in% base)])
@@ -740,6 +731,30 @@
       (if updater?
         (dynamic-require `(lib "updater.rkt" ,this-collection-name) 'bg-update)
         void))
+
+    (define (get-lang-prefix modname)
+      (let* ([pref (preferences:get (drracket:language-configuration:get-settings-preferences-symbol))]
+             [lang (drracket:language-configuration:language-settings-language pref)]
+             [settings (drracket:language-configuration:language-settings-settings pref)])
+        (send lang get-metadata modname settings)))
+
+    (define (with-fake-header editor)
+      (let ([new-editor (send editor copy-self)]
+            [text (get-lang-prefix 'handin)])
+        (when text
+          (send new-editor set-position 0)
+          (send new-editor insert-port (open-input-string text)))
+        new-editor))
+
+    (define (editors->string definitions interactions)
+      (let* ([base (make-object editor-stream-out-bytes-base%)]
+             [stream (make-object editor-stream-out% base)]
+             [definitions-with-fake-header (with-fake-header definitions)])
+        (write-editor-version stream base)
+        (write-editor-global-header stream)
+        (for ([ed (in-list (list definitions-with-fake-header interactions))]) (send ed write-to-file stream))
+        (write-editor-global-footer stream)
+        (send base get-bytes)))
 
     (define tool-button-label (bitmap-label-maker button-label/h handin-icon))
 
@@ -796,8 +811,8 @@
                [callback
                 (lambda (button)
                   (let ([content (editors->string
-                                  (list (get-definitions-text)
-                                        (get-interactions-text)))])
+                                  (get-definitions-text)
+                                  (get-interactions-text))])
                     (new handin-frame%
                          [parent this]
                          [content content]
