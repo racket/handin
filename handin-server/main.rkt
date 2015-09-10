@@ -448,7 +448,7 @@
       ;; crypt is not reentrant
       (call-with-semaphore sema
                            (lambda () (bytes->string/utf-8 (c passwd salt)))))))
-(define (has-password? raw md5 passwords)
+(define ((make-has-password? error*) raw md5 passwords)
   (define (good? passwd)
     (define (bad-password msg)
       (log-line "ERROR: ~a -- ~s" msg passwd)
@@ -467,6 +467,8 @@
           [else (bad-password "bad password value in user database")]))
   (or (member md5 passwords) ; very cheap search first
       (ormap good? passwords)))
+
+(define has-password? (make-has-password? error*))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
