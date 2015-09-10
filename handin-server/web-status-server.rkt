@@ -12,6 +12,7 @@
          handin-server/private/logger
          handin-server/private/config
          handin-server/private/hooker
+         handin-server/private/userdb
          "run-servlet.rkt")
 
 ;; Looks up key in alist, returns #f if not found.
@@ -352,11 +353,17 @@
                                 user (string-foldcase user)))]
          [user-data (get-user-data user)])
     (redirect/get)
+    (define (error* fmt . args)
+      (login-page for-handin (apply format fmt args)))
+    (define has-password? (make-has-password? error*))
     (cond [(and user-data
                 (string? passwd)
-                (let ([pw (md5 passwd)])
-                  (or (equal? pw (car user-data))
-                      (equal? pw (get-conf 'master-password)))))
+                (has-password?
+                 passwd
+                 (md5 passwd)
+                 (let ([mp (get-conf 'master-password)]
+                       [up (list (car user-data))])
+                   (if mp (cons mp up) up))))
            (status-page user for-handin)]
           [else (login-page for-handin "Bad username or password")])))
 
