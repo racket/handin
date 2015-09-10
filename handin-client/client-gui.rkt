@@ -729,12 +729,12 @@
         (dynamic-require `(lib "updater.rkt" ,this-collection-name) 'bg-update)
         void))
 
-    (define (editors->string editors)
+    (define (editors->string definitions interactions)
       (let* ([base (make-object editor-stream-out-bytes-base%)]
              [stream (make-object editor-stream-out% base)])
         (write-editor-version stream base)
         (write-editor-global-header stream)
-        (for ([ed (in-list editors)]) (send ed write-to-file stream))
+        (for ([ed (in-list (list definitions interactions))]) (send ed write-to-file stream))
         (write-editor-global-footer stream)
         (send base get-bytes)))
 
@@ -793,8 +793,8 @@
                [callback
                 (lambda (button)
                   (let ([content (editors->string
-                                  (list (get-definitions-text)
-                                        (get-interactions-text)))])
+                                  (get-definitions-text)
+                                  (get-interactions-text))])
                     (new handin-frame%
                          [parent this]
                          [content content]
