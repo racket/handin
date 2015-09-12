@@ -4,6 +4,9 @@
          racket/path
          racket/file
          racket/date
+         racket/string
+         racket/port
+         xml
          net/uri-codec
          web-server/servlet
          web-server/compat/0/coerce
@@ -23,10 +26,34 @@
 (define (clean-str s)
   (regexp-replace #rx" +$" (regexp-replace #rx"^ +" s "") ""))
 
-;; Construct page title.
-(define (make-page title . body)
+; XXX Hardcoded location for template.
+(define template-path "index.html")
+
+(define (template title content)
+  (string-replace
+   (string-replace
+    (call-with-input-file template-path
+      (lambda (in) (port->string in)))
+    "TITLE" title)
+   "CONTENT" content))
+
+(define (tags-to-text xexprs)
+  (apply string-append (map xexpr->string xexprs)))
+
+;; Construct whole page.
+(define (make-page-ext-template title body)
+  ; By using a pair, our string will be converted to a response without encoding.
+  (list TEXT/HTML-MIME-TYPE (template title (tags-to-text body))))
+
+(define (make-page-simple title body)
   `(html (head (title ,title))
          (body ([bgcolor "white"]) (h1 ((align "center")) ,title) ,@body)))
+
+(define (exists-template?) (file-exists? template-path))
+(define (make-page title . body)
+  (if (exists-template?)
+      (make-page-ext-template title body)
+      (make-page-simple title body)))
 
 ;; Acess user data for a user.
 (define get-user-data
