@@ -49,7 +49,7 @@
   `(html (head (title ,title))
          (body ([bgcolor "white"]) (h1 ((align "center")) ,title) ,@body)))
 
-(define (exists-template?) (file-exists? template-path))
+(define (exists-template?) (and (file-exists? template-path) (member 'read (file-or-directory-permissions template-path))))
 (define (make-page title . body)
   (if (exists-template?)
       (make-page-ext-template title body)
