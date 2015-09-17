@@ -212,8 +212,8 @@
               (format "Alle Abgaben für ~a" user)
               `(table ([class "submissions"])
                  (thead (tr (th "Aufgabenblatt") (th "Abgegebene Dateien") (th "Punkte")))
-                 ,@(append (map (row k #t upload-suffixes) (get-conf 'active-dirs))
-                           (map (row k #f #f) (get-conf 'inactive-dirs)))))))])
+                 (tbody ,@(append (map (row k #t upload-suffixes) (get-conf 'active-dirs))
+                           (map (row k #f #f) (get-conf 'inactive-dirs))))))))])
     (handle-status-request user next upload-suffixes)))
 
 ;; Handle file uploading and downloading.
