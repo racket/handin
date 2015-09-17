@@ -358,20 +358,17 @@
              (make-page
               "Abgabestatus"
               `(p "Hier können Sie den Status Ihrer abgegebenen Aufgabenblätter einsehen. Melden Sie sich mit den gleichen Daten an, die Sie auch für das Forum verwenden.")
-              `(form ([action ,k] [method "post"])
-                 (table ([align "center"])
-                   (tr (td ([colspan "2"] [align "center"])
-                           (font ([color "red"]) ,(or errmsg 'nbsp))))
+              `(p ([class "error-msg"]) ,(or errmsg 'nbsp))
+              `(form ([class "status-login"] [action ,k] [method "post"])
+                 (table
                    (tr (td "Benutzername")
                        (td (input ([type "text"] [name "user"] [size "20"]
                                    [value ""]))))
-                   (tr (td nbsp))
                    (tr (td "Passwort")
                        (td (input ([type "password"] [name "passwd"]
-                                   [size "20"] [value ""]))))
-                   (tr (td ([colspan "2"] [align "center"])
-                           (input ([type "submit"] [name "post"]
-                                   [value "Anmelden"])))))))))]
+                                   [size "20"] [value ""])))))
+                 (div ([class "controls"])
+                      (button "Anmelden"))))))]
          [bindings  (request-bindings request)]
          [user      (aget bindings 'user)]
          [passwd    (aget bindings 'passwd)]
