@@ -353,7 +353,9 @@
               "Abgabestatus"
               `(p "Hier können Sie den Status Ihrer abgegebenen Aufgabenblätter einsehen. Melden Sie sich mit den gleichen Daten an, die Sie auch für das "
                   (a ([href "https://forum-ps.informatik.uni-tuebingen.de/"]) "Forum") " verwenden.")
-              `(p ([class "error-msg"]) ,(or errmsg 'nbsp))
+              (if errmsg
+                  `(p ([class "error-msg"]) ,errmsg)
+                  `(p))
               `(form ([class "status-login"] [action ,k] [method "post"])
                  (table
                    (tr (td "Benutzername")
