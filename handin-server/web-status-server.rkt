@@ -125,8 +125,7 @@
                        #t)
                      ")")))
                l))
-         (list (format "No handins accepted so far for user ~s, assignment ~s"
-                       user hi)))
+         (list "Keine Abgabe eingereicht oder akzeptiert."))
      (if (and image (file-exists? image))
          (let ([image-k (make-k k (relativize-path image))])
            (list `(br)
@@ -180,12 +179,12 @@
 (define (one-status-page user for-handin)
   (let* ([next (send/suspend
                 (lambda (k)
-                  (make-page (format "User: ~a, Handin: ~a" user for-handin)
+                  (make-page (format "Nutzer: ~a, Abgabe: ~a" user for-handin)
                     `(p ,@(handin-link k user for-handin #f))
-                    `(p "Grade: " ,(handin-grade user for-handin))
+                    `(p "Punkte: " ,(handin-grade user for-handin))
                     `(p ,@(solution-link k for-handin))
                     `(p (a ([href ,(make-k k "allofthem")])
-                           ,(format "All handins for ~a" user))))))])
+                           ,(format "Alle Abgaben für ~a" user))))))])
     (handle-status-request user next null)))
 
 ;; Display a left-aligned cell in a handin table
@@ -204,7 +203,7 @@
 (define (((handin-table-row user) k active? upload-suffixes) dir)
   (let ([hi (assignment<->dir dir)])
     `(tr ([valign "top"])
-       ,(apply handin-table-header hi (if active? `((br) (small (small "[active]"))) '()))
+       ,(apply handin-table-header hi (if active? `((br) (small (small "[Aktiv]"))) '()))
        ,(apply handin-table-cell (handin-link k user hi upload-suffixes))
        ,(handin-table-rcell (handin-grade user hi)))))
 
@@ -216,9 +215,9 @@
           (send/suspend
            (lambda (k)
              (make-page
-              (format "All Handins for ~a" user)
+              (format "Alle Abgaben für ~a" user)
               `(table ([bgcolor "#ddddff"] [cellpadding "6"] [align "center"])
-                 (tr () ,@(map handin-table-header '(nbsp "Files" "Grade")))
+                 (tr () ,@(map handin-table-header '("Aufgabenblatt" "Abgegebene Dateien" "Punkte")))
                  ,@(append (map (row k #t upload-suffixes) (get-conf 'active-dirs))
                            (map (row k #f #f) (get-conf 'inactive-dirs)))))))])
     (handle-status-request user next upload-suffixes)))
@@ -357,21 +356,22 @@
           (send/suspend
            (lambda (k)
              (make-page
-              "Handin Status Login"
+              "Abgabestatus"
+              `(p "Hier können Sie den Status Ihrer abgegebenen Aufgabenblätter einsehen. Melden Sie sich mit den gleichen Daten an, die Sie auch für das Forum verwenden.")
               `(form ([action ,k] [method "post"])
                  (table ([align "center"])
                    (tr (td ([colspan "2"] [align "center"])
                            (font ([color "red"]) ,(or errmsg 'nbsp))))
-                   (tr (td "Username")
+                   (tr (td "Benutzername")
                        (td (input ([type "text"] [name "user"] [size "20"]
                                    [value ""]))))
                    (tr (td nbsp))
-                   (tr (td "Password")
+                   (tr (td "Passwort")
                        (td (input ([type "password"] [name "passwd"]
                                    [size "20"] [value ""]))))
                    (tr (td ([colspan "2"] [align "center"])
                            (input ([type "submit"] [name "post"]
-                                   [value "Login"])))))))))]
+                                   [value "Anmelden"])))))))))]
          [bindings  (request-bindings request)]
          [user      (aget bindings 'user)]
          [passwd    (aget bindings 'passwd)]
@@ -392,7 +392,7 @@
                        [user-pwd (list (car user-data))])
                    (if master-pwd (cons master-pwd user-pwd) user-pwd))))
            (status-page user for-handin)]
-          [else (login-page for-handin "Bad username or password")])))
+          [else (login-page for-handin "Benutzername oder Passwort falsch.")])))
 
 ;; Set up session counter.
 (define web-counter
