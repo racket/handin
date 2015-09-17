@@ -111,34 +111,39 @@
                                               (not (equal? f "handin.png"))
                                               (file-exists? f)))
                                        (map path->string (directory-list)))
-                               string<?))))])
-    (append
-     (if (pair? l)
-         (cdr (append-map
-               (lambda (f)
-                 (let ([hi (build-path dir f)])
-                   `((br)
-                     (a ([href ,(make-k k (relativize-path hi))]) ,f)
-                     " ("
-                     ,(date->string
-                       (seconds->date (file-or-directory-modify-seconds hi))
-                       (date-display-format 'german))
-                     ")")))
-               l))
-         (list "Keine Abgabe eingereicht oder akzeptiert."))
-     (if (and image (file-exists? image))
-         (let ([image-k (make-k k (relativize-path image))])
-           (list `(br)
-                 `(a ([href ,image-k])
-                     (img ([src ,image-k])))))
-         null)
-     (if upload-suffixes
-         (let ([dir (or dir 
-                        (build-path (assignment<->dir hi) user))])
-           (list '(br)
-                 `(a ([href ,(make-k k (relativize-path dir) #:mode "upload")])
-                     "Upload...")))
-         null))))
+                               string<?))))]
+         [handins (append
+
+                    ; links to handins
+                    (if (pair? l)
+                        (map (lambda (f)
+                               (let ([hi (build-path dir f)])
+                                 `(li (a ([href ,(make-k k (relativize-path hi))]) ,f)
+                                   " ("
+                                   ,(date->string
+                                     (seconds->date (file-or-directory-modify-seconds hi))
+                                     (date-display-format 'german))
+                                   ")")))
+                             l)
+                        null)
+                    
+                    ; links to uploaded pictures
+                    (if (and image (file-exists? image))
+                        (let ([image-k (make-k k (relativize-path image))])
+                          (list `(li (a ([href ,image-k])
+                                        (img ([src ,image-k]))))))
+                        null)
+                    
+                    ; links to upload handins now
+                    (if upload-suffixes
+                        (let ([dir (or dir 
+                              (build-path (assignment<->dir hi) user))])
+                          (list `(li (a ([href ,(make-k k (relativize-path dir) #:mode "upload")])
+                               "Upload..."))))
+                        null))])
+    (if (pair? handins)
+        `(ul ,@handins)
+        "Keine Abgabe eingereicht oder akzeptiert.")))
 
 ;; ???
 (define (solution-link k hi)
@@ -187,25 +192,14 @@
                            ,(format "Alle Abgaben für ~a" user))))))])
     (handle-status-request user next null)))
 
-;; Display a left-aligned cell in a handin table
-(define (handin-table-cell  . texts)
-  `(td ([bgcolor "white"]) ,@texts))
-
-;; Display a right-aligned cell in a handin table.
-(define (handin-table-rcell . texts)
-  `(td ([bgcolor "white"] [align "right"]) ,@texts))
-
-;; Display an header cell in a handin table.
-(define (handin-table-header . texts)
-  `(td ([bgcolor "#f0f0f0"]) (big (strong ,@texts))))
 
 ;; Displays a row in a table of handins.
 (define (((handin-table-row user) k active? upload-suffixes) dir)
   (let ([hi (assignment<->dir dir)])
-    `(tr ([valign "top"])
-       ,(apply handin-table-header hi (if active? `((br) (small (small "[Aktiv]"))) '()))
-       ,(apply handin-table-cell (handin-link k user hi upload-suffixes))
-       ,(handin-table-rcell (handin-grade user hi)))))
+    `(tr ([class ,(if active? "active" "inactive")])
+       (th ([scope "row"]) ,hi)
+       (td ,(handin-link k user hi upload-suffixes))
+       (td ,(handin-grade user hi)))))
 
 ;; Display the status of one user and all handins.
 (define (all-status-page user)
@@ -216,8 +210,8 @@
            (lambda (k)
              (make-page
               (format "Alle Abgaben für ~a" user)
-              `(table ([bgcolor "#ddddff"] [cellpadding "6"] [align "center"])
-                 (tr () ,@(map handin-table-header '("Aufgabenblatt" "Abgegebene Dateien" "Punkte")))
+              `(table ([class "submissions"])
+                 (thead (tr (th "Aufgabenblatt") (th "Abgegebene Dateien") (th "Punkte")))
                  ,@(append (map (row k #t upload-suffixes) (get-conf 'active-dirs))
                            (map (row k #f #f) (get-conf 'inactive-dirs)))))))])
     (handle-status-request user next upload-suffixes)))
