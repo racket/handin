@@ -357,7 +357,8 @@
            (lambda (k)
              (make-page
               "Abgabestatus"
-              `(p "Hier können Sie den Status Ihrer abgegebenen Aufgabenblätter einsehen. Melden Sie sich mit den gleichen Daten an, die Sie auch für das Forum verwenden.")
+              `(p "Hier können Sie den Status Ihrer abgegebenen Aufgabenblätter einsehen. Melden Sie sich mit den gleichen Daten an, die Sie auch für das "
+                  `(a ([href "https://forum-ps.informatik.uni-tuebingen.de/"]) "Forum") " verwenden.")
               `(p ([class "error-msg"]) ,(or errmsg 'nbsp))
               `(form ([class "status-login"] [action ,k] [method "post"])
                  (table
