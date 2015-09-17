@@ -17,6 +17,7 @@
    `(,(car specs)
      ,@(cdr specs)
      lang/posn
+     2htdp/image
      ,@(if gui? '(mrlib/cache-image-snip) '()))))
 
 ;; local overrides
