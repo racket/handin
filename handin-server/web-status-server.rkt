@@ -55,15 +55,6 @@
       (make-page-ext-template title body)
       (make-page-simple title body)))
 
-;; Acess user data for a user.
-(define get-user-data
-  (let ([users-file (build-path server-dir "users.rktd")])
-    (unless (file-exists? users-file)
-      (log-line "WARNING: users file missing on startup: ~a" users-file))
-    (lambda (user)
-      (and user (get-preference (string->symbol user) (lambda () #f) 'timestamp
-                                users-file)))))
-
 ;; Make path relative to server directory.
 (define (relativize-path p)
   (path->string (find-relative-path (normalize-path server-dir) p)))

@@ -1,6 +1,18 @@
 #lang racket/base
 
-(require "logger.rkt")
+(require racket/file
+         "logger.rkt"
+         "config.rkt")
+
+;; Acess user data for a user.
+(provide get-user-data)
+(define get-user-data
+  (let ([users-file (build-path server-dir "users.rktd")])
+    (unless (file-exists? users-file)
+      (log-line "WARNING: users file missing on startup: ~a" users-file))
+    (lambda (user)
+      (and user (get-preference (string->symbol user) (lambda () #f) 'timestamp
+                                users-file)))))
 
 (define crypt
   (let ([c #f] [sema (make-semaphore 1)])

@@ -347,9 +347,6 @@
       "users.rktd"))
    orig-custodian))
 
-(define (get-user-data username)
-  (get-preference (string->symbol username) (lambda () #f) 'timestamp
-                  "users.rktd"))
 (define (check-field value field-re field-name field-desc)
   (unless (cond [(or (string? field-re) (regexp? field-re))
                  (regexp-match field-re value)]
