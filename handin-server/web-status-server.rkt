@@ -122,7 +122,7 @@
                      " ("
                      ,(date->string
                        (seconds->date (file-or-directory-modify-seconds hi))
-                       #t)
+                       (date-display-format 'german))
                      ")")))
                l))
          (list "Keine Abgabe eingereicht oder akzeptiert."))
