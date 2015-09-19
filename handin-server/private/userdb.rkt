@@ -1,6 +1,8 @@
 #lang racket/base
 
 (require racket/file
+         json
+         net/http-client
          "logger.rkt"
          "config.rkt")
 
@@ -13,6 +15,64 @@
     (lambda (user)
       (and user (get-preference (string->symbol user) (lambda () #f) 'timestamp
                                 users-file)))))
+
+;; cache results of action for up to freq milliseconds
+(define (cached freq action)
+  (let ([cache #f]
+        [last #f])
+    (lambda ()
+      (if (and last (< (- (current-inexact-milliseconds) last) freq))
+        cache
+        (let ([result (action)])
+          (set! cache result)
+          (set! last (current-inexact-milliseconds))
+          result)))))
+
+;; access discourse configuration
+(define get-conf/discourse
+  (let* ([read-discourse-config-file
+          (lambda ()
+            (let* ([file (get-conf 'discourse-config-file)]
+                   [text (and file (file->string file))]
+                   [result (and text (string->jsexpr text))])
+              result))]
+         [discourse-config
+          (cached 2000.0 read-discourse-config-file)])
+    (lambda (key)
+      (let ([config (discourse-config)])
+        (and config (hash-ref config key))))))
+
+;; send request to discourse
+(define (discourse path [post-data #f])
+  (let ([api-username (get-conf/discourse 'api_username)]
+        [api-key (get-conf/discourse 'api_key)])
+    (and api-username api-key
+      (let-values ([(status header port)
+                    (http-sendrecv "forum-ps.informatik.uni-tuebingen.de"
+                                   (format "~a?api_username=~a&api_key=~a" path api-username api-key)
+                                   #:ssl? #t
+                                   #:version "1.1"
+                                   #:method (if post-data "POST" "GET")
+                                   #:data post-data)])
+        (log-line  "DISCOURSE ~a: ~a" path status)
+        (define result (read-json port))
+        (close-input-port port)
+        result))))
+
+;; fetch user database of discourse
+(define get-user-data/discourse
+  (let* ([fetch-data
+          (lambda ()
+            (for/hasheq ([user (hash-ref (discourse "/admin/course/dump.json") 'users)])
+              (values (string->symbol (hash-ref user 'username)) user)))]
+         [data (cached 2000.0 fetch-data)])
+    (lambda (username)
+      (hash-ref (data) username))))
+
+;; authenticate username/password with discourse
+;; TODO: fails with 500 Internal Server Error
+(define (has-password/discourse? username password)
+  (discourse "/admin/course/auth.json" (jsexpr->string (hasheq 'user username 'password password))))
 
 (define crypt
   (let ([c #f] [sema (make-semaphore 1)])
