@@ -3,6 +3,7 @@
 (require racket/file
          json
          net/http-client
+         net/uri-codec
          "logger.rkt"
          "config.rkt")
 
@@ -49,7 +50,10 @@
     (and api-username api-key
       (let-values ([(status header port)
                     (http-sendrecv "forum-ps.informatik.uni-tuebingen.de"
-                                   (format "~a?api_username=~a&api_key=~a" path api-username api-key)
+                                   (format "~a?~a"
+                                     path
+                                     (alist->form-urlencoded `((api_key . ,api-key)
+                                                               (api_username . ,api-username))))
                                    #:ssl? #t
                                    #:version "1.1"
                                    #:method (if post-data "POST" "GET")
@@ -70,9 +74,8 @@
       (hash-ref (data) username))))
 
 ;; authenticate username/password with discourse
-;; TODO: fails with 500 Internal Server Error
 (define (has-password/discourse? username password)
-  (discourse "/admin/course/auth.json" (jsexpr->string (hasheq 'user username 'password password))))
+  (discourse "/admin/course/auth.json" (alist->form-urlencoded `((user . ,username) (password . ,password)))))
 
 (define crypt
   (let ([c #f] [sema (make-semaphore 1)])
