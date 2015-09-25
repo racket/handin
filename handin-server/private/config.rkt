@@ -94,6 +94,7 @@
     [(log-output)              (values #t                    id           )]
     [(log-file)                (values "log"                 path/false   )]
     [(web-log-file)            (values #f                    path/false   )]
+    [(discourse-config-file)   (values #f                    path/false   )]
     [(extra-fields)
      (values '(("Full Name" #f #f)
                ("ID#" #f #f)

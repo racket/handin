@@ -11,6 +11,7 @@
          "private/run-status.rkt"
          "private/reloadable.rkt"
          "private/hooker.rkt"
+         "private/userdb.rkt"
          (prefix-in web: "web-status-server.rkt")
          ;; this sets some global parameter values, and this needs
          ;; to be done in the main thread, rather than later in a
@@ -346,9 +347,6 @@
       "users.rktd"))
    orig-custodian))
 
-(define (get-user-data username)
-  (get-preference (string->symbol username) (lambda () #f) 'timestamp
-                  "users.rktd"))
 (define (check-field value field-re field-name field-desc)
   (unless (cond [(or (string? field-re) (regexp? field-re))
                  (regexp-match field-re value)]
@@ -440,33 +438,7 @@
                           (and (memq f (get-conf 'user-fields)) d))
                         all-data (get-conf 'extra-fields)))))
 
-(define crypt
-  (let ([c #f] [sema (make-semaphore 1)])
-    ;; use only when needed so it doesn't blow up on non-unix platforms
-    (lambda (passwd salt)
-      (unless c (set! c (dynamic-require 'ffi/crypt 'crypt)))
-      ;; crypt is not reentrant
-      (call-with-semaphore sema
-                           (lambda () (bytes->string/utf-8 (c passwd salt)))))))
-(define (has-password? raw md5 passwords)
-  (define (good? passwd)
-    (define (bad-password msg)
-      (log-line "ERROR: ~a -- ~s" msg passwd)
-      (error* "bad password in user database"))
-    (cond [(string? passwd) (equal? md5 passwd)]
-          [(and (list? passwd) (= 2 (length passwd))
-                (symbol? (car passwd)) (string? (cadr passwd)))
-           (case (car passwd)
-             [(plaintext) (equal? raw (cadr passwd))]
-             [(unix)
-              (let ([salt (regexp-match #rx"^([$][^$]+[$][^$]+[$]|..)"
-                                        (cadr passwd))])
-                (unless salt (bad-password "badly formatted unix password"))
-                (equal? (crypt raw (car salt)) (cadr passwd)))]
-             [else (bad-password "bad password type in user database")])]
-          [else (bad-password "bad password value in user database")]))
-  (or (member md5 passwords) ; very cheap search first
-      (ormap good? passwords)))
+(define has-password? (make-has-password? error*))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

@@ -21,7 +21,7 @@
 ;; the values to add a menu item under "Help" to open
 ;; the specified web page (using the user's chosen web
 ;; browser.)
-;(define web-menu-name "Course Homepage")
+;(define web-menu-name (string-append name " Homepage"))
 ;(define web-address "http://www.university.edu/course/")
 
 ;; Auto-updater section (see handin-server/doc.txt for details)

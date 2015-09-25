@@ -685,37 +685,31 @@
          [parent parent]))
   cached-user-fields)
 
-(define (scale-by-half file)
+
+(define (scale-to-16 file)
   (let* ([bm (make-object bitmap% file 'unknown/mask)]
          [w (send bm get-width)]
          [h (send bm get-height)]
-         [bm2 (make-object bitmap% (quotient w 2) (quotient h 2))]
+         [new-h 16]
+         [new-w (quotient (* w new-h) h)]
+         [bm2 (make-object bitmap% new-w new-h)]
          [mbm2 (and (send bm get-loaded-mask)
-                    (make-object bitmap% (quotient w 2) (quotient h 2)))]
+                    (make-object bitmap% new-w new-h))]
          [mdc (make-object bitmap-dc% bm2)])
     (send mdc draw-bitmap-section-smooth bm 
-          0 0 (quotient w 2) (quotient h 2)
+          0 0 new-w new-h
           0 0 w h)
     (send mdc set-bitmap #f)
     (when mbm2
       (send mdc set-bitmap mbm2)
       (send mdc draw-bitmap-section-smooth (send bm get-loaded-mask)
-            0 0 (quotient w 2) (quotient h 2)
+            0 0 new-w new-h
             0 0 w h)
       (send mdc set-bitmap #f)
       (send bm2 set-loaded-mask mbm2))
     bm2))
 
-(define handin-icon (scale-by-half (in-this-collection "icon.png")))
-
-(define (editors->string editors)
-  (let* ([base (make-object editor-stream-out-bytes-base%)]
-         [stream (make-object editor-stream-out% base)])
-    (write-editor-version stream base)
-    (write-editor-global-header stream)
-    (for ([ed (in-list editors)]) (send ed write-to-file stream))
-    (write-editor-global-footer stream)
-    (send base get-bytes)))
+(define handin-icon (scale-to-16 (in-this-collection "icon.png")))
 
 (define (string->editor! str defs)
   (let* ([base (make-object editor-stream-in-bytes-base% str)]
@@ -737,6 +731,30 @@
       (if updater?
         (dynamic-require `(lib "updater.rkt" ,this-collection-name) 'bg-update)
         void))
+
+    (define (get-lang-prefix modname)
+      (let* ([pref (preferences:get (drracket:language-configuration:get-settings-preferences-symbol))]
+             [lang (drracket:language-configuration:language-settings-language pref)]
+             [settings (drracket:language-configuration:language-settings-settings pref)])
+        (send lang get-metadata modname settings)))
+
+    (define (with-fake-header editor)
+      (let ([new-editor (send editor copy-self)]
+            [text (get-lang-prefix 'handin)])
+        (when text
+          (send new-editor set-position 0)
+          (send new-editor insert-port (open-input-string text)))
+        new-editor))
+
+    (define (editors->string definitions interactions)
+      (let* ([base (make-object editor-stream-out-bytes-base%)]
+             [stream (make-object editor-stream-out% base)]
+             [definitions-with-fake-header (with-fake-header definitions)])
+        (write-editor-version stream base)
+        (write-editor-global-header stream)
+        (for ([ed (in-list (list definitions-with-fake-header interactions))]) (send ed write-to-file stream))
+        (write-editor-global-footer stream)
+        (send base get-bytes)))
 
     (define tool-button-label (bitmap-label-maker button-label/h handin-icon))
 
@@ -793,8 +811,8 @@
                [callback
                 (lambda (button)
                   (let ([content (editors->string
-                                  (list (get-definitions-text)
-                                        (get-interactions-text)))])
+                                  (get-definitions-text)
+                                  (get-interactions-text))])
                     (new handin-frame%
                          [parent this]
                          [content content]
