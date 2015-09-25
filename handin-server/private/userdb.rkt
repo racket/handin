@@ -9,7 +9,11 @@
 
 ;; Acess user data for a user.
 (provide get-user-data)
-(define get-user-data
+(define (get-user-data user)
+  (or (get-user-data/local user)
+      (get-user-data/discourse user)))
+
+(define get-user-data/local
   (let ([users-file (build-path server-dir "users.rktd")])
     (unless (file-exists? users-file)
       (log-line "WARNING: users file missing on startup: ~a" users-file))
@@ -112,6 +116,8 @@
                                         (cadr passwd))])
                 (unless salt (bad-password "badly formatted unix password"))
                 (equal? (crypt raw (car salt)) (cadr passwd)))]
+             [(discourse)
+              (has-password/discourse? (cadr passwd) raw)]
              [else (bad-password "bad password type in user database")])]
           [else (bad-password "bad password value in user database")]))
   (or (member md5 passwords) ; very cheap search first
