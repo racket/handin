@@ -78,7 +78,10 @@
 
 ;; authenticate username/password with discourse
 (define (has-password/discourse? username password)
-  (discourse "/admin/course/auth.json" (alist->form-urlencoded `((user . ,username) (password . ,password)))))
+  (hash-ref (discourse "/admin/course/auth.json"
+                       (alist->form-urlencoded `((user . ,username)
+                                                 (password . ,password))))
+            'success))
 
 (define crypt
   (let ([c #f] [sema (make-semaphore 1)])
