@@ -67,8 +67,11 @@
 (define get-user-data/discourse
   (let* ([fetch-data
           (lambda ()
-            (for/hasheq ([user (hash-ref (discourse "/admin/course/dump.json") 'users)])
-              (values (string->symbol (hash-ref user 'username)) user)))]
+            (for/hash ([user (hash-ref (discourse "/admin/course/dump.json") 'users)])
+              (values (hash-ref user 'username)
+                      (cons (list 'discourse (hash-ref user 'username))
+                            (for/list ([extra-field (get-conf 'extra-fields)])
+                              (hash-ref user (string->symbol (car extra-field))))))))]
          [data (cached 2000.0 fetch-data)])
     (lambda (username)
       (hash-ref (data) username))))
