@@ -2,6 +2,7 @@
 
 (require racket/class racket/unit racket/file racket/gui/base net/sendurl
          mrlib/switchable-button mrlib/bitmap-label drracket/tool framework
+         drracket/private/auto-language
          "info.rkt" "client.rkt" "this-collection.rkt")
 
 (provide tool@)
@@ -743,14 +744,30 @@
         (write-editor-global-footer stream)
         (send base get-bytes)))
 
+    ; Adapted from
+    ; https://github.com/racket/drracket/blob/a2f8efc910ffd5e0992279ff59bfe7145598d5ba/drracket/drracket/private/unit.rkt#L619-L643
+    (define (guess-language defs)
+      (let-values ([(matching-language settings)
+                    (pick-new-language
+                     defs
+                     (drracket:language-configuration:get-languages)
+                     #f #f)])
+        (when matching-language
+          (send defs set-next-settings
+                (drracket:language-configuration:language-settings
+                 matching-language
+                 settings)
+                #f))))
+
     (define (string->editor! str defs)
       (let* ([base (make-object editor-stream-in-bytes-base% str)]
              [stream (make-object editor-stream-in% base)])
         (read-editor-version stream base #t)
         (read-editor-global-header stream)
         (send* defs (begin-edit-sequence #f)
-          (erase) (read-from-file stream)
-          (end-edit-sequence))
+          (erase) (read-from-file stream))
+        (guess-language defs)
+        (send defs end-edit-sequence)
         (read-editor-global-footer stream)))
 
     (define tool-button-label (bitmap-label-maker button-label/h handin-icon))
