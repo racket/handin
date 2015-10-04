@@ -708,16 +708,6 @@
 
 (define handin-icon (scale-by-half (in-this-collection "icon.png")))
 
-(define (string->editor! str defs)
-  (let* ([base (make-object editor-stream-in-bytes-base% str)]
-         [stream (make-object editor-stream-in% base)])
-    (read-editor-version stream base #t)
-    (read-editor-global-header stream)
-    (send* defs (begin-edit-sequence #f)
-                (erase) (read-from-file stream)
-                (end-edit-sequence))
-    (read-editor-global-footer stream)))
-
 (define tool@
   (unit
     (import drracket:tool^)
@@ -752,6 +742,16 @@
         (for ([ed (in-list (list definitions-with-fake-header interactions))]) (send ed write-to-file stream))
         (write-editor-global-footer stream)
         (send base get-bytes)))
+
+    (define (string->editor! str defs)
+      (let* ([base (make-object editor-stream-in-bytes-base% str)]
+             [stream (make-object editor-stream-in% base)])
+        (read-editor-version stream base #t)
+        (read-editor-global-header stream)
+        (send* defs (begin-edit-sequence #f)
+          (erase) (read-from-file stream)
+          (end-edit-sequence))
+        (read-editor-global-footer stream)))
 
     (define tool-button-label (bitmap-label-maker button-label/h handin-icon))
 
