@@ -730,9 +730,9 @@
         void))
 
     (define (get-lang-prefix modname)
-      (let* ([pref (preferences:get (drracket:language-configuration:get-settings-preferences-symbol))]
-             [lang (drracket:language-configuration:language-settings-language pref)]
-             [settings (drracket:language-configuration:language-settings-settings pref)])
+      (let* ([lang-settings (preferences:get (drracket:language-configuration:get-settings-preferences-symbol))]
+             [lang (drracket:language-configuration:language-settings-language lang-settings)]
+             [settings (drracket:language-configuration:language-settings-settings lang-settings)])
         (send lang get-metadata modname settings)))
 
     (define (with-fake-header editor)
