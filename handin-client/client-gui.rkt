@@ -729,15 +729,15 @@
         (dynamic-require `(lib "updater.rkt" ,this-collection-name) 'bg-update)
         void))
 
-    (define (get-lang-prefix modname)
-      (let* ([lang-settings (preferences:get (drracket:language-configuration:get-settings-preferences-symbol))]
+    (define (get-lang-prefix modname editor)
+      (let* ([lang-settings (send editor get-next-settings)]
              [lang (drracket:language-configuration:language-settings-language lang-settings)]
              [settings (drracket:language-configuration:language-settings-settings lang-settings)])
         (send lang get-metadata modname settings)))
 
     (define (with-fake-header editor)
       (let ([new-editor (send editor copy-self)]
-            [text (get-lang-prefix 'handin)])
+            [text (get-lang-prefix 'handin editor)])
         (when text
           (send new-editor set-position 0)
           (send new-editor insert-port (open-input-string text)))
