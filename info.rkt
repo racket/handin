@@ -11,6 +11,7 @@
                "net-lib"
                "pconvert-lib"
                "sandbox-lib"
+               "rackunit-lib"
                "web-server-lib"))
 (define build-deps '("gui-doc"
                      "racket-doc"
