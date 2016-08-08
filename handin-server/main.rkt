@@ -4,6 +4,7 @@
          racket/port
          openssl
          racket/file
+         racket/string
          "private/logger.rkt"
          "private/config.rkt"
          "private/lock.rkt"
@@ -477,6 +478,13 @@
   (or (member md5 passwords) ; very cheap search first
       (ormap good? passwords)))
 
+(define (has-password?/check-all raw md5 master passwords)
+  (for/fold ([good? #t])
+            ([r (in-list raw)]
+             [m (in-list md5)]
+             [p (in-list passwords)])
+    (and good? (has-password? r m (if master (list master p) (list p))))))
+
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define (handle-connection r r-safe w)
@@ -485,6 +493,11 @@
   (define data
     (make-alist 'protocol-data `((assignments . ,(box active-assignments)))))
   (define (perror fmt . args) (apply error 'handin-protocol fmt args))
+  (define group-auth (get-conf 'group-authentication))
+  (define only-create/update? #f)
+  (unless (or (eq? 'single group-auth)
+              (eq? 'multi group-auth))
+    (error "Invalid group-authentication configuration: ~a" group-auth))
   (let loop ()
     (set! msg (read r-safe))
     (case msg
@@ -492,29 +505,60 @@
       ;; getting information from the client
       [(set)
        (let* ([key (read r-safe)] [val (read r-safe)])
+         (define user-count #f)
          (unless (symbol? key) (perror "bad key value: ~e" key))
-         (unless (if (eq? 'user-fields key)
-                     (and (list? val)
-                          (- (length val) (length (get-conf 'user-fields)))
-                          (andmap string? val))
-                     (string? val))
+         (unless (cond
+                   [(eq? 'user-fields key)
+                    (and (list? val)
+                         (- (length val) (length (get-conf 'user-fields)))
+                         (andmap string? val))]
+                   [(and (eq? 'multi group-auth)
+                         (or (eq? 'username/s key)
+                             (eq? 'password key)))
+                    (if (string? val)
+                        (let ()
+                          (set! group-auth 'single)
+                          (set! only-create/update? #t))
+                        (and (list? val)
+                             (if user-count
+                                 (eq? user-count (length val))
+                                 (set! user-count (length val)))
+                             (andmap string? val)))]
+                   [else (string? val)])
            (perror "bad value for set: ~e" val))
          (when (a-ref data key #f) (perror "multiple values for ~e" key))
          (case key
            [(username/s)
             (unless (get-conf 'username-case-sensitive)
               (set! val (string-foldcase val)))
-            (let ([usernames
-                   ;; Username lists must always be sorted, and never empty
-                   ;; (regexp-split will not return an empty list)
-                   (sort (regexp-split #rx" *[+] *" val) string<?)])
-              (a-set! data 'usernames usernames)
-              (a-set! data 'user-datas (map get-user-data usernames)))]
+            (cond
+              [(eq? 'multi group-auth)
+               (define sorted-usernames (sort val string<?))
+               (a-set! data 'usernames sorted-usernames)
+               (a-set! data 'user-datas (map get-user-data sorted-usernames))
+               (a-set! data 'unsorted-usernames val)
+               (a-set! data 'unsorted-user-datas (map get-user-data val))
+               (set! val (string-join sorted-usernames "+"))]
+              [(eq? 'single group-auth)
+               (let ([usernames
+                      ;; Username lists must always be sorted, and never empty
+                      ;; (regexp-split will not return an empty list)
+                      (sort (regexp-split #rx" *[+] *" val) string<?)])
+                 (a-set! data 'usernames usernames)
+                 (a-set! data 'user-datas (map get-user-data usernames)))])]
            [(password new-password)
-            ;; empty passwords are left empty for change-user-info to re-use
-            ;; an existing password value
-            (when (eq? key 'password) (a-set! data 'raw-password val))
-            (unless (equal? "" val) (set! val (md5 val)))]
+            (cond
+              [(eq? 'multi group-auth)
+               (when (eq? key 'password)
+                 (a-set! data 'raw-password val))
+               (set! val
+                     (for/list ([i (in-list val)])
+                       (if (equal? "" i) "" (md5 i))))]
+              [(eq? 'single group-auth)
+               ;; empty passwords are left empty for change-user-info to re-use
+               ;; an existing password value
+               (when (eq? key 'password) (a-set! data 'raw-password val))
+               (unless (equal? "" val) (set! val (md5 val)))])]
            [(usernames user-datas raw-password assignments)
             ;; forbid setting these directly
             (perror "bad key for `set': ~e" key)])
@@ -540,14 +584,24 @@
            (apply error 'handin
                   (if username/s `("hangup (~a)" ,username/s) `("hangup")))))
        (let ([usernames  (a-ref data 'usernames #f)]
-             [user-datas (a-ref data 'user-datas #f)])
+             [user-datas (a-ref data 'user-datas #f)]
+             [unsorted-user-datas (a-ref data 'unsorted-user-datas #f)])
          (when (or (memq #f user-datas)
-                   (not (has-password?
-                         (a-ref data 'raw-password)
-                         (a-ref data 'password)
-                         (let ([mp (get-conf 'master-password)]
-                               [up (map car user-datas)])
-                           (if mp (cons mp up) up)))))
+                   (and (eq? group-auth 'single)
+                        (not (has-password?
+                              (a-ref data 'raw-password)
+                              (a-ref data 'password)
+                              (let ([mp (get-conf 'master-password)]
+                                    [up (map car user-datas)])
+                                (if mp (cons mp up) up)))))
+                   (and only-create/update?
+                        (not (eq? msg change-user-info)))
+                   (and (eq? group-auth 'multi)
+                        (not (has-password?/check-all
+                              (a-ref data 'raw-password)
+                              (a-ref data 'password)
+                              (get-conf 'master-password)
+                              (map car unsorted-user-datas)))))
            (log-line "failed login: ~a" (a-ref data 'username/s))
            (error* "bad username or password for ~a"
                    (a-ref data 'username/s)))
