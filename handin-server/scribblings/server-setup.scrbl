@@ -405,7 +405,7 @@ This directory contains the following files and sub-directories:
 
     The checker should return a string, such as @filepath{handin.rkt},
     to use in naming the submission file, or @racket[#f] to indicate
-    that he file should be deleted (e.g., when the checker alrady
+    that the file should be deleted (e.g., when the checker already
     created the submission file(s) in a different place).
 
     Alternatively, the module can bind @racket[checker] to a list of
