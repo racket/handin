@@ -419,12 +419,15 @@
   (define extra-fields (add-hidden-to-user-fields user-fields))
   (unless (= 1 (length usernames))
     (error* "cannot change a password for multiple users: ~a" usernames))
+  (unless (or (string? passwd)
+              (= 1 (length passwd)))
+    (error* "cannot change a password for multiple users: ~a" usernames))
   ;; the new data is the same as the old one for every empty string (includes
   ;; hidden fields)
   (let* ([username (car usernames)]
          [old-data (car user-datas)]
          [new-data (map (lambda (old new) (if (equal? "" new) old new))
-                        old-data (cons passwd extra-fields))])
+                        old-data (cons (car passwd) extra-fields))])
     (unless (or (get-conf 'allow-change-info)
                 (equal? (cdr new-data) (cdr old-data)))
       (error* "changing information not allowed: ~a" username))
