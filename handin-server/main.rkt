@@ -517,7 +517,8 @@
                          (andmap string? val))]
                    [(and (eq? 'multi group-auth)
                          (or (eq? 'username/s key)
-                             (eq? 'password key)))
+                             (eq? 'password key)
+                             (eq? 'new-password key)))
                     (if (string? val)
                         (let ()
                           (set! group-auth 'single)
