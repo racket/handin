@@ -4,6 +4,7 @@
          racket/path
          racket/file
          racket/date
+         racket/match
          net/uri-codec
          web-server/servlet
          web-server/compat/0/coerce
@@ -311,8 +312,12 @@
     (redirect/get)
     (cond [(and user-data
                 (string? passwd)
-                (let ([pw (md5 passwd)])
-                  (or (equal? pw (car user-data))
+                (let ([pw (md5 passwd)]
+                      [correct-pw
+                       (match (car user-data)
+                         [`(plaintext ,passwd) (md5 passwd)]
+                         [else else])])
+                  (or (equal? pw correct-pw)
                       (equal? pw (get-conf 'master-password)))))
            (status-page user for-handin)]
           [else (login-page for-handin "Bad username or password")])))
