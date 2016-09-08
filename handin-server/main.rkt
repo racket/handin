@@ -599,7 +599,7 @@
                                     [up (map car user-datas)])
                                 (if mp (cons mp up) up)))))
                    (and only-create/update?
-                        (not (eq? msg change-user-info)))
+                        (eq? msg save-submission))
                    (and (eq? group-auth 'multi)
                         (not (has-password?/check-all
                               (a-ref data 'raw-password)
