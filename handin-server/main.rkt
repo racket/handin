@@ -342,7 +342,8 @@
      (put-preferences
       (list (string->symbol username)) (list data)
       (lambda (f)
-        (error* "user database busy; please try again, and alert the administrator if problems persist"))
+        (error*
+         "user database busy; please try again, and alert the administrator if problems persist"))
       "users.rktd"))
    orig-custodian))
 
@@ -363,7 +364,15 @@
 ;; extra-fields from user-fields, using "" for hidden fields
 (define (add-hidden-to-user-fields user-fields)
   (let ([user-field-name->user-field
-         (map cons (get-conf 'user-fields) user-fields)])
+         (with-handlers ([exn:fail:contract?
+                          (λ (x)
+                            (raise-user-error 'intstructor-error
+                                              (string-append "Your instructor did not properly add "
+                                                             "you to the course, "
+                                                             "please give the following error to "
+                                                             "your instructor: ~a")
+                             x))])
+           (map cons (get-conf 'user-fields) user-fields))])
     (map (lambda (f)
            (cond [(assq f user-field-name->user-field) => cdr]
                  [else ""]))
