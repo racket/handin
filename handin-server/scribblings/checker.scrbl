@@ -371,6 +371,12 @@ code.}
   Similar to @racket[!procedure] and @racket[!procedure*] for
   integers.}
 
+@deftogether[(@defform[(!boolean id)]
+              @defform[(!boolean* expr)])]{
+
+  Similar to @racket[!procedure] and @racket[!procedure*] for
+  booleans.}
+
 @deftogether[(
 @defform*[((!test expr)
            (!test expr result)
