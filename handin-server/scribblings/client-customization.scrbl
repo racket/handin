@@ -42,10 +42,11 @@ uniquely.  For example, @filepath{uu-cs1410} is a good name for CS
   according to the course.}
 
 @item{Replace @filepath{server-cert.pem} in your renamed directory
-  with a server certificate.  The file @filepath{server-cert.pem} in
+  with a server certificate, or delete @filepath{server-cert.pem}
+  to rely on a certificate chain.  The file @filepath{server-cert.pem} in
   @filepath{handin-client} collection is ok for testing, but the point
   of this certificate is to make handins secure, so you should
-  generate a new (self-certifying) certificate and keep its key
+  either delete it or generate a new (self-certifying) certificate and keep its key
   private.  (See @secref{server-setup}.)}
 
 @item{To create an installable package, follow the process described

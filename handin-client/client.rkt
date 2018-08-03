@@ -36,7 +36,9 @@
   (define ctx (ssl-make-client-context))
   (ssl-set-verify! ctx #t)
   (ssl-load-default-verify-sources! ctx)
-  (ssl-load-verify-root-certificates! ctx pem)
+  (if (file-exists? pem)
+      (ssl-load-verify-root-certificates! ctx pem)
+      (ssl-set-verify-hostname! ctx #t))
   (with-handlers
       ([exn:fail:network?
         (lambda (e)

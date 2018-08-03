@@ -2,7 +2,7 @@
 
 ;; Modify these definitions to enable & customize the tool.
 ;; (Detailed instructions are in the handin-server collection's docs.)
-;; Also replace the "server-cert.pem" files.
+;; Also replace or delete the "server-cert.pem" file.
 
 ;; Your course name (used for menus, button label, collection name etc)
 (define name "Course")
