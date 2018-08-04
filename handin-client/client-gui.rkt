@@ -26,6 +26,9 @@
 (define password-keep-minutes
   (#%info-lookup 'password-keep-minutes (lambda () #f)))
 
+(define allow-submit-on-error?
+  (#%info-lookup 'allow-submit-on-error? (lambda () #f)))
+
 (define handin-dialog-name (string-append handin-name " Handin"))
 (define button-label/h     (string-append handin-name " Handin"))
 (define button-label/r     (string-append handin-name " Retrieve"))
@@ -141,6 +144,13 @@
                         (send assignment get-string
                               (send assignment get-selection))))]
            [stretchable-width #t]))
+    (define submit-on-error
+      (and allow-submit-on-error?
+           (new check-box%
+                [label "Submit even if server reports problems"]
+                [parent this]
+                [callback (lambda (c e) (void))]
+                [stretchable-width #t])))
 
     (define button-panel
       (new horizontal-pane%
@@ -155,6 +165,9 @@
            [parent button-panel]
            [callback (lambda _
                        (define r? (send retrieve? get-value))
+                       (when submit-on-error
+                         (send submit-on-error set-value #f)
+                         (send submit-on-error enable #f))
                        (send ok set-label
                              (if r? button-label/r button-label/h)))]
            [value (eq? 'retrieve mode)]
@@ -168,6 +181,8 @@
        (send passwd get-value)
        (send assignment get-string (send assignment get-selection))
        content
+       #:submit-on-error? (and allow-submit-on-error?
+                               (send submit-on-error get-value))
        ;; on-commit
        (lambda ()
          (semaphore-wait commit-lock)
@@ -259,11 +274,11 @@
                          (set! continue-abort? #t) (send d show #f))))))
 
     (define interface-widgets
-      (list ok username passwd assignment retrieve?))
+      (list ok username passwd assignment retrieve? submit-on-error))
     (define (disable-interface)
-      (for ([x (in-list interface-widgets)]) (send x enable #f)))
+      (for ([x (in-list interface-widgets)]) (when x (send x enable #f))))
     (define (enable-interface)
-      (for ([x (in-list interface-widgets)]) (send x enable #t) ))
+      (for ([x (in-list interface-widgets)]) (when x (send x enable #t))))
     (define (done-interface)
       (send cancel set-label "Close")
       (send cancel focus))

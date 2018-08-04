@@ -207,6 +207,21 @@ Every exception or result mismatch during the call to
   specified), the timer will be reset to the @racket['session-timeout]
   value.)}
 
+@defproc[(get-user-assignment-directory) path?]{
+
+  Returns the path for a submission currently being checked.}
+
+@defproc[(get-assignment-name) string?]{
+
+  Returns the name of the assignment for a submission currently being
+  checked.}
+
+@defproc[(get-submit-on-error?) boolean?]{
+
+  Returns @racket[#t] if the client is configured to include an
+  @onscreen{Submit even if server reports problems} checkbox and
+  the user checked it, @racket[#f] otherwise.}
+
 @defthing[server-dir path-string?]{
 
   The main directory the server is running from.  Useful for getting

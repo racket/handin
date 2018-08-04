@@ -89,7 +89,8 @@
       v)))
 
 (define (submit-assignment h username passwd assignment content
-                           on-commit message message-final message-box)
+                           on-commit message message-final message-box
+                           #:submit-on-error? [submit-on-error? #f])
   (let ([r (handin-r h)] [w (handin-w h)])
     (define (read/message)
       (let ([v (read r)])
@@ -103,6 +104,7 @@
       'set 'username/s username
       'set 'password   passwd
       'set 'assignment assignment
+      'set 'submit-on-error (if submit-on-error? "yes" "no")
       'save-submission)
     (wait-for-ok r "login")
     (write+flush w (bytes-length content))

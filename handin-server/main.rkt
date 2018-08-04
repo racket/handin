@@ -170,6 +170,11 @@
 (define assignment-name (make-parameter #f))
 (define (get-assignment-name) (assignment-name))
 
+(provide get-submit-on-error?)
+(define current-submission-data (make-parameter #f))
+(define (get-submit-on-error?)
+  (equal? (a-ref (current-submission-data) 'submit-on-error "no") "yes"))
+
 (define (accept-specific-submission data r r-safe w)
   ;; Note: users are always sorted
   (define users       (a-ref data 'usernames))
@@ -189,7 +194,8 @@
     (unless (len . < . max)
       (error* "max handin file size is ~s bytes, ~a (~s bytes)"
               max "file to handin is too big" len)))
-  (parameterize ([current-directory (assignment<->dir assignment)])
+  (parameterize ([current-directory (assignment<->dir assignment)]
+                 [current-submission-data data])
     (wait-for-lock dirname
                    (let ([dir (build-path (current-directory) dirname)])
                      (lambda () (cleanup-submission dir))))
