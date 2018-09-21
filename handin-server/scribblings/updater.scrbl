@@ -32,3 +32,7 @@ get this to work, you need to create your @filepath{.plt} file using
 mzc's @DFlag{replace} flag, so it will be possible to overwrite
 existing files.  (Also note that there is no way to delete files when
 a new @filepath{.plt} is installed.)
+
+Another key, @indexed-racket[version-check-frequency], when set to a
+number N, will make the version check happen continuously in the
+background, once every N hours.
