@@ -26,6 +26,7 @@
 
 ;; Auto-updater section (see handin-server/doc.txt for details)
 ;(define enable-auto-update #t) ; enable auto-update?
+;(define version-check-frequency 1) ; update-check every N hours (#f: disable)
 ;(define version-filename "handin-version")
 ;(define package-filename "handin.plt")
 
