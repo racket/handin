@@ -164,6 +164,26 @@ This directory contains the following files and sub-directories:
     @filepath{users.rktd} file and fill in such information.  (The third
     element for such descriptors is ignored.)}
 
+ @item{@indexed-racket[group-authentication] --- indicates
+    the type of authentication required for group accounts.
+    The default value is @code{single}. Valid values are:
+
+    @itemlist[
+ @item{@code{single} --- Only one user most provide their
+      password to authenticate to the server. This means
+      that either student can submit or retrieve a group
+      file without the other.}
+ @item{@code{multi} --- Every user must provide their
+      password to authenticate to the server. This means
+      that all students must be present when submitting and
+      retrieving assignments. If this option is sent the
+      associated handin client must be modified to submit a
+      list for the @racket['username/s] and 
+      @racket['password] fields when submitting and
+      retrieving files. This can be done by modifying 
+      @filepath{client-gui.rkt} to have multiple user and
+      password fields in the submission dialog.}]}
+  
   @item{@indexed-racket[hook-file] --- a path (relative to handin
     server directory or absolute) that specifies a filename that
     contains a `hook' module.  This is useful as a general device for

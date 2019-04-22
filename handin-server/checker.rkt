@@ -770,3 +770,8 @@
          ((if (pair? proc) (car proc) handler) loc)))]
     [(null? uncovered) #f]
     [else (error* "bad checker: no coverage information for !all-covered")]))
+
+(module reader syntax/module-reader
+  handin-server/checker
+  #:read read
+  #:read-syntax read-syntax)
