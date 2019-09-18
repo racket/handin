@@ -613,8 +613,7 @@
              ;;  run-server level
              (custodian-shutdown-all session-cust)
              (loop #t)]
-            [else (collect-garbage)
-                  (log-line "running ~a ~a"
+            [else (log-line "running ~a ~a"
                             (mem (current-memory-use session-cust))
                             (if no-limit-warning?
                                 "(total)"
@@ -668,7 +667,9 @@
 (define (handle-handin-request r w)
   (set! connection-num (add1 connection-num))
   (when ((current-memory-use) . > . (get-conf 'session-memory-limit))
-    (collect-garbage))
+    (log-line "warning: memory use ~s is above session limit of ~s"
+              (current-memory-use)
+              (get-conf 'session-memory-limit)))
   (parameterize ([current-session
                   (begin (set! session-count (add1 session-count))
                          session-count)])
@@ -739,7 +740,7 @@
    (lambda (exn)
      (log-line "ERROR: ~a" (if (exn? exn) (exn-message exn) exn)))
    (lambda (port-k cnt reuse?)
-     (let ([l (ssl-listen port-k cnt #t)])
+     (let ([l (ssl-listen port-k 128 #t)])
        (ssl-load-certificate-chain! l "server-cert.pem")
        (ssl-load-private-key! l "private-key.pem")
        (start-notify)
