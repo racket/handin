@@ -17,7 +17,10 @@
    `(,(car specs)
      ,@(cdr specs)
      lang/posn
-     ,@(if gui? '(mrlib/cache-image-snip) '()))))
+     ; for htdp/image
+     mrlib/cache-image-snip
+     ; for 2htdp/image
+     mrlib/image-core)))
 
 ;; local overrides
 (require racket/runtime-path)
