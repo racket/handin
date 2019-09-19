@@ -4,6 +4,7 @@
          racket/port
          openssl
          racket/file
+         racket/format
          "private/logger.rkt"
          "private/config.rkt"
          "private/lock.rkt"
@@ -665,6 +666,7 @@
 (define session-count 0)
 
 (define (handle-handin-request r w)
+  (define init-ms (current-inexact-milliseconds))
   (set! connection-num (add1 connection-num))
   (when ((current-memory-use) . > . (get-conf 'session-memory-limit))
     (log-line "warning: memory use ~s is above session limit of ~s"
@@ -700,7 +702,9 @@
                  (write+flush w 'ver1)
                  (error 'handin "unknown handin version: ~e" ver)))
            (handle-connection r r-safe w)
-           (log-line "normal exit")
+           (log-line "normal exit; took ~a ms"
+                     (~r (- (current-inexact-milliseconds) init-ms)
+                         #:precision 2))
            (kill-watcher)))))))
 
 (define (handle-http-request r w)
