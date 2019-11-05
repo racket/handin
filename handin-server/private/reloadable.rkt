@@ -1,6 +1,12 @@
 #lang racket/base
 
 (require syntax/moddep "logger.rkt")
+
+;; this module provides provide/monitor and protect, designed
+;; to guard evaluation of named forms using a single semaphore.
+;; all defined or protected forms are guarded by the same semaphore.
+;; provide/monitor provides a function, and names for its arguments.
+;; protect is wrapped around an expression. 
 (module mon racket/base
   (define sema (make-semaphore 1))
   (define-syntax-rule
