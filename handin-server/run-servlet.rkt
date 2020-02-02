@@ -80,12 +80,12 @@
         ;;        => semaphore-post])
         )))
   ;; error handler that redirects back to where the interaction started
-  (define ((send-error msg to) req)
-    (let ([to (to)])
-      `(html (head (meta ([http-equiv "refresh"]
-                          [content ,(format "3;URL=~a" to)]))
-                   (title ,msg))
-             (body ,msg "; " (a ([href ,to]) "restarting") " in 3 seconds."))))
+  (define init-path "/")
+  (define ((send-error msg) req)
+    `(html (head (meta ([http-equiv "refresh"]
+                        [content ,(format "3;URL=~a" init-path)]))
+                 (title ,msg))
+           (body ,msg "; " (a ([href ,init-path]) "restarting") " in 3 seconds.")))
   (define shut
     (serve
      #:tcp@ (make-tcp@ ach)
@@ -100,14 +100,14 @@
            (dispatcher req))
          #:regexp #rx""
          #:manager (make-threshold-LRU-manager
-                    (send-error "Your session has expired" init-path)
-                    (* 12 1024 1024))))
+                    (send-error "Your session has expired")
+                    (* 160 1024 1024))))
       ;; This can be used to serve html content too; doesn't make sense now,
       ;; since the servlet will be used for all requests, and it never calls
       ;; (next-dispatcher).  (See "servlet-env.rkt" for the needed `require's.)
       ;; (files:make
       ;;  #:url->path (fsmap:make-url->path (build-path server-dir "htdocs")))
-      ;; (lift:make (send-error "File not found" (lambda () "/")))
+      ;; (lift:make (send-error "File not found"))
       )))
   (lambda (msg . args)
     (case msg
