@@ -57,12 +57,14 @@
 
 ;; Execution ----------------------------------------
 
-(define (make-evaluator* lang reqs inp)
+(define (make-evaluator* lang reqs allowed-requires inp)
   (reraise-exn-as-submission-problem
    (lambda ()
      (if (and (list? lang) (= 2 (length lang)) (eq? 'module (car lang)))
-       (make-module-evaluator inp #:language (cadr lang) #:allow-read reqs)
-       (make-evaluator lang inp #:requires reqs)))))
+         (make-module-evaluator inp #:language (cadr lang) #:allow-read reqs
+                                #:allow-syntactic-requires allowed-requires)
+         (make-evaluator lang inp #:requires reqs
+                         #:allow-syntactic-requires allowed-requires)))))
 
 (define (open-input-text-editor/lines str)
   (let ([inp (open-input-text-editor str)])
@@ -176,7 +178,9 @@
       (regexp-replace #rx"\n$" (get-output-string p) ""))))
 (define current-value-printer (make-parameter default-value-printer))
 
-(define (call-with-evaluator lang requires program-port go)
+(define (call-with-evaluator lang requires program-port
+                             #:allowed-requires [allowed-requires #f]
+                             go)
   (parameterize ([error-value->string-handler (lambda (v s)
                                                 ((current-value-printer) v))]
                  [list-abbreviation-enabled
@@ -184,10 +188,14 @@
                            (equal? lang '(special beginner-abbr))))])
     (reraise-exn-as-submission-problem
      (lambda ()
-       (let ([e (make-evaluator* lang requires program-port)])
+       (let ([e (make-evaluator* lang requires allowed-requires program-port)])
          (set-run-status "executing your code")
          (go e))))))
 
-(define (call-with-evaluator/submission lang requires str go)
+(define (call-with-evaluator/submission lang requires str
+                                        #:allowed-requires [allowed-requires #f]
+                                        go)
   (let-values ([(defs interacts) (unpack-submission str)])
-    (call-with-evaluator lang requires (open-input-text-editor defs) go)))
+    (call-with-evaluator lang requires (open-input-text-editor defs)
+                         #:allowed-requires allowed-requires
+                         go)))

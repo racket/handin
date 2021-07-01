@@ -16,9 +16,11 @@ language module---a typical checker that uses it looks like this:
 
 @racketblock[
    (module checker handin-server/checker
-     (check: :language  '(special intermediate)
-             :users     pairs-or-singles-with-warning
-             :coverage? #t
+     (check: :language         '(special intermediate)
+             :allowed-requires '(htdp/isl/runtime
+                                 racket/runtime-config)
+             :users            pairs-or-singles-with-warning
+             :coverage?        #t
        (!procedure Fahrenheit->Celsius 1)
        (!test (Fahrenheit->Celsius  32)   0)
        (!test (Fahrenheit->Celsius 212) 100)
@@ -81,6 +83,18 @@ Keywords for configuring @racket[check:]:
 
 @item{@indexed-racket[:teachpacks]---an alternative name for
   @racket[:requires], kept for legacy checkers.}
+
+@item{@indexed-racket[:allowed-requires]---module paths for to
+  be allowed in @racket[require] forms that appear in a module's source or
+  during macro expansion, or @racket[#f] (the default) to disable
+  additional @racket[require] checking. Limiting
+  @racket[require] should not be necessary in principle, because
+  unsafe operations are already limited by a code inspector, but
+  constraining the libraries that can possibly be reference provides
+  an extra layer of security. The modules needed by a given language
+  depend on the language's implementation; for example, the expansion
+  of a @racketmodname[racket/base] module will introduce a @racket[(require
+  @#,racketmodname[racket/runtime-config])].}
 
 @item{@indexed-racket[:create-text?]---if true, then a textual version
   of the submission is saved as @filepath{text.rkt} in a
