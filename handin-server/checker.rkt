@@ -22,7 +22,14 @@
       (raise-syntax-error #f "bad syntax" stx))))
 
 (define (error* fmt . args)
-  (error (apply format fmt args)))
+  (define (make-str)
+    (apply format fmt args))
+  (error
+   ;; Using `(submission-eval)` when available blocks interference
+   ;; that works through a custom write handler or impersonators
+   (if (submission-eval)
+       (call-in-sandbox-context (submission-eval) make-str)
+       (make-str))))
 
 (define fields (map car (get-conf 'extra-fields)))
 
@@ -736,8 +743,11 @@
        (error* "your code failed a test: ~.s is false" (->disp 'expr)))]
     [(_ expr result) (!test expr result equal?)]
     [(_ expr result equal?)
-     (let ([val ((submission-eval) `expr)])
-       (unless (equal? result val)
+     (let ([val ((submission-eval) `expr)]
+           [expected result])
+       ;; Use `equal?` in the sandbox in case an equality handler
+       ;; or imersonator callback is involved
+       (unless (call-in-sandbox-context (submission-eval) (lambda () (equal? expected val)))
          (error* "your code failed a test: ~.s evaluated to ~e, expecting ~e"
                  (->disp 'expr) (->disp val) (->disp result))))]))
 
