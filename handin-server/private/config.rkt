@@ -1,6 +1,10 @@
 #lang racket/base
 
-(require racket/file)
+(require racket/file
+         (only-in racket/function curry)
+         (only-in racket/list first second third partition)
+         (only-in racket/date find-seconds))
+
 
 ;; This module should be invoked when we're in the server directory
 (provide server-dir)
@@ -69,13 +73,51 @@
 (define (path/false p) (and p (path p)))
 (define (path-list l)  (map path l))
 (define (maybe-strs l) (and l (pair? l) (map string->bytes/utf-8 l)))
+;; A DateTime is a list of 5 exact integers, year month day hour minutes.
+;; i.e. (2013 12 31 23 01)
+
+;; Seconds is an exact integer, representing a time in seconds since
+;; midnight UTC, January 1, 1970
+
+(define FOREVER (find-seconds 1 1 1 1 1 9999))
+;; [Maybe DateTime] -> Seconds
+;; (datetimels->seconds (2013 12 31 23 01)) -> (find-seconds 00 01 23 31 12 2013)
+;; (datetimels->seconds #f) -> FOREVER
+(define (datetimels->seconds ls)
+  (if ls (apply (curry find-seconds 0) (reverse ls)) FOREVER))
+
+;; A ProblemSet is a (list String [Maybe DateTime] [Maybe Datetime]), 
+;; representing the name of a problem set and its start and end times.
+;; #f for start indicates never active. #f for end indicates active
+;; forever after the start date.
+
+;; ProblemSet -> (list Path Seconds Seconds)
+;; Parse a problem-set into something easier to work with.
+(define (parse-ps l)
+  (map (lambda (x) (list (path (first x))
+                         (datetimels->seconds (second x))
+                         (datetimels->seconds (third x)))) l))
+
+;; [List-of ProblemSet] -> (list [List-of Path] [List-of Path])
+;; parses l into active and inactive-dirs, as used in the rest of the server.
+(define (ps->dirs l)
+ (let ([cur (current-seconds)])
+   (let-values ([(act inact) 
+                 (partition (lambda (x) 
+                              (<= (second x) cur (third x))) 
+                            l)])
+     (list (map first act) (map first inact)))))
+;; [List-of ProblemSet] -> [List-of Path]
+(define ps->active (compose first ps->dirs))
+;; [List-of ProblemSet] -> [List-of Path]
+(define ps->inactive (compose second ps->dirs))
 
 (define (config-default+translate which)
   ;; translate = #f => a computed value (so no lookup or translation)
   ;;           = #t => an unknown key (raw return value)
   (case which
-    [(active-dirs)             (values '()                   path-list    )]
-    [(inactive-dirs)           (values '()                   path-list    )]
+    [(active-dirs)             (values (ps->active (get-conf 'problem-sets))                   #f)]
+    [(inactive-dirs)           (values (ps->inactive (get-conf 'problem-sets))                 #f)]
     [(port-number)             (values 7979                  id           )]
     [(use-https)               (values #t                    id           )]
     [(hook-file)               (values #f                    path/false   )]
@@ -102,7 +144,8 @@
              id)]
     ;; computed from the above (mark by translate = #f)
     [(all-dirs)
-     (values (append (get-conf 'active-dirs) (get-conf 'inactive-dirs)) #f)]
+     (values (path-list (map first (get-conf 'problem-sets))) #f)]
+    [(problem-sets)            (values '()                   parse-ps)]
     [(names-dirs) ; see below
      (values (paths->map (get-conf 'all-dirs)) #f)]
     [(user-fields)
