@@ -12,9 +12,15 @@ the @envvar{PLT_HANDINSERVER_DIR} environment variable.
 This directory contains the following files and sub-directories:
 @itemize[
 @item{@filepath{server-cert.pem}: the server's certificate.  To create a
-  certificate and key with openssl:
+  self-signed certificate and key with openssl:
   @commandline{openssl req -new -nodes -x509 -days 365
-                 -out server-cert.pem -keyout private-key.pem}}
+                 -out server-cert.pem -keyout private-key.pem}
+
+  Alternatively, use a properly signed certificate. In that case,
+  @filepath{server-cert.pem} should not be included with the client.
+  Beware that distributing a properly signed
+  @filepath{server-cert.pem} can fail with some SSL libraries on the
+  client side.}
 
 @item{@filepath{private-key.pem}: the private key to go with
   @filepath{server-cert.pem}.  Whereas @filepath{server-cert.pem} gets
