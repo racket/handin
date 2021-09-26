@@ -57,12 +57,14 @@
 
 ;; Execution ----------------------------------------
 
-(define (make-evaluator* lang reqs allowed-requires inp)
+(define (make-evaluator* lang reqs allowed-requires readers inp)
+  (define-syntax-rule (w/readers f x ...)
+    (if (eq? readers 'auto) (f x ...) (f x ... #:readers readers)))
   (reraise-exn-as-submission-problem
    (lambda ()
      (if (and (list? lang) (= 2 (length lang)) (eq? 'module (car lang)))
-         (make-module-evaluator inp #:language (cadr lang) #:allow-read reqs
-                                #:allow-syntactic-requires allowed-requires)
+         (w/readers make-module-evaluator inp #:language (cadr lang) #:allow-read reqs
+                    #:allow-syntactic-requires allowed-requires)
          (make-evaluator lang inp #:requires reqs
                          #:allow-syntactic-requires allowed-requires)))))
 
@@ -72,7 +74,7 @@
 
 (define (make-evaluator/submission language requires str)
   (let-values ([(defs interacts) (unpack-submission str)])
-    (make-evaluator* language requires (open-input-text-editor defs))))
+    (make-evaluator* language requires 'auto (open-input-text-editor defs))))
 
 (define (evaluate-all source port eval)
   (let loop ()
@@ -180,6 +182,7 @@
 
 (define (call-with-evaluator lang requires program-port
                              #:allowed-requires [allowed-requires #f]
+                             #:readers [readers 'auto]
                              go)
   (parameterize ([error-value->string-handler (lambda (v s)
                                                 ((current-value-printer) v))]
@@ -188,14 +191,16 @@
                            (equal? lang '(special beginner-abbr))))])
     (reraise-exn-as-submission-problem
      (lambda ()
-       (let ([e (make-evaluator* lang requires allowed-requires program-port)])
+       (let ([e (make-evaluator* lang requires allowed-requires readers program-port)])
          (set-run-status "executing your code")
          (go e))))))
 
 (define (call-with-evaluator/submission lang requires str
                                         #:allowed-requires [allowed-requires #f]
+                                        #:readers [readers 'auto]
                                         go)
   (let-values ([(defs interacts) (unpack-submission str)])
     (call-with-evaluator lang requires (open-input-text-editor defs)
                          #:allowed-requires allowed-requires
+                         #:readers readers
                          go)))
