@@ -93,15 +93,14 @@
      (wrap-sequence
       (and log-file (log:make #:format (log:log-format->format 'apache-default)
                               #:log-path log-file))
-      (let ([init-path (make-parameter "/")])
-        (dispatch/servlet
-         (lambda (req)
-           (init-path (url->string (request-uri req)))
-           (dispatcher req))
-         #:regexp #rx""
-         #:manager (make-threshold-LRU-manager
-                    (send-error "Your session has expired")
-                    (* 160 1024 1024))))
+      (dispatch/servlet
+       (lambda (req)
+         (set! init-path (url->string (request-uri req)))
+         (dispatcher req))
+       #:regexp #rx""
+       #:manager (make-threshold-LRU-manager
+                  (send-error "Your session has expired")
+                  (* 160 1024 1024)))
       ;; This can be used to serve html content too; doesn't make sense now,
       ;; since the servlet will be used for all requests, and it never calls
       ;; (next-dispatcher).  (See "servlet-env.rkt" for the needed `require's.)
