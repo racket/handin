@@ -9,10 +9,12 @@
          web-server/servlet
          web-server/compat/0/coerce
          web-server/compat/0/http/response-structs
-         handin-server/private/md5
-         handin-server/private/logger
-         handin-server/private/config
-         handin-server/private/hooker
+         xml
+         "private/md5.rkt"
+         "private/logger.rkt"
+         "private/config.rkt"
+         "private/hooker.rkt"
+         "private/reloadable.rkt"
          "run-servlet.rkt")
 
 (define (aget alist key)
@@ -34,9 +36,26 @@
   .error { color: red@";" }
 })
 
+(define make-page-file #f)
+(define make-page-proc #f)
 (define (make-page title . body)
-  `(html (head (title ,title) (style "\n" ,@css "\n"))
-         (body (h1 ,title) ,@body)))
+  (define file (get-conf 'handin-make-page))
+  (define (default-maker title . body)
+    (xexpr->string
+     `(html (head (title ,title) (style "\n" ,@css "\n"))
+            (body (h1 ,title) ,@body))))
+  (define maker
+    (cond [(not file) default-maker]
+          [else (unless (equal? file make-page-file)
+                  (set! make-page-file file)
+                  (set! make-page-proc
+                        (auto-reload-procedure `(file ,(path->string file))
+                                               'make-page)))
+                make-page-proc]))
+  (response/output
+   (λ (out)
+     (write-string (apply maker title body) out)
+     (void))))
 
 (define get-user-data
   (let ([users-file (build-path server-dir "users.rktd")])
@@ -156,11 +175,12 @@
   (define (rcell . texts) `(td ([class "grade"]) ,@texts))
   (define (header . texts) `(th ,@texts))
   (define ((row k active? upload-suffixes) dir)
-    (let ([hi (assignment<->dir dir)])
-      `(tr ,(apply header hi (if active? `((br) (small (small "[active]"))) '()))
-           ,(apply cell (handin-link k user hi upload-suffixes))
-           ,(rcell (handin-grade user hi))
-           ,(apply cell (solution-link k hi)))))
+    (define hi (assignment<->dir dir))
+    `(tr ,(if active? `([class "active"]) '())
+       ,(apply header hi (if active? `((br) (small (small "[active]"))) '()))
+       ,(apply cell (handin-link k user hi upload-suffixes))
+       ,(rcell (handin-grade user hi))
+       ,(apply cell (solution-link k hi))))
   (define upload-suffixes (get-conf 'allow-web-upload))
   (let* ([next
           (send/suspend
