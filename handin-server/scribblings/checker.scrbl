@@ -205,7 +205,7 @@ Keywords for configuring @racket[check:]:
   @racketblock[
     (lambda (msg)
       (add-header-line! "Erroneous submission!")
-      (add-header-line! (format "  --> ~a" msg))
+      (add-header-line! (line:unsubst (format "  --> ~a" msg)))
       (message (string-append
                 "You have an error in your program -- please hit"
                 " \"Run\" and debug your code.\n"
@@ -332,11 +332,20 @@ code.}
   submission directory, then the system will not allow ``@tt{foo}'' to
   submit with ``@tt{bar}''.)}
 
-@defproc[(add-header-line! [line string?]) void?]{
+@defproc[(add-header-line! [line (or/c string? line:empty? line:unsubst?)]) void?]{
   During the checker operation, can be used to add header lines to the
   text version of the submitted file (in addition to the
   @racket[:extra-lines] setting).  It will not have an effect if
   @racket[:create-text?] is false.}
+
+@defproc[(line:empty) line:empty?]{
+  Helper for @racket[add-header-line!]: creates a value that results in an
+  added ampty line (not prefixed).}
+
+@defproc[(line:unsubst [str string?]) line:unsubst?]{
+  Helper for @racket[add-header-line!]: creates a value that results in a
+  prefixed line with the given text which is not subtituted via [user-substs].
+  Use this to avoid erroneous values from user strings (like error messages).}
 
 @defproc[(procedure/arity? [proc procedure?] [arity number?])
          boolean?]{

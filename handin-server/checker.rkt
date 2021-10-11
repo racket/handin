@@ -327,7 +327,9 @@
 
 ;; for adding lines in the checker
 (define added-lines (make-thread-cell #f))
-(provide add-header-line!)
+(provide add-header-line! line:empty line:unsubst)
+(struct line:empty () #:prefab)
+(struct line:unsubst (str) #:prefab)
 (define (add-header-line! line)
   (let ([new (list line)] [cur (thread-cell-ref added-lines)])
     (if cur
@@ -482,6 +484,13 @@
                    (define generic-substs `(("submission" . ,submission-dir)))
                    (define (prefix-line/substs str)
                      (prefix-line (subst str generic-substs)))
+                   (define (prefix-line/substs* str)
+                     (if (line:empty? str)
+                       (newline)
+                       (prefix-line
+                        (cond [(string? str) (subst str generic-substs)]
+                              [(line:unsubst? str) (line:unsubst-str str)]
+                              [else (error* "bad value in prefix lines: ~e" str)]))))
                    (define (write-text)
                      (set-run-status "creating text file")
                      (with-output-to-file text-file #:exists 'truncate
@@ -489,7 +498,7 @@
                          (for ([user (in-list users)])
                            (prefix-line (user-substs user student-line)))
                          (for-each prefix-line/substs extra-lines)
-                         (for-each prefix-line/substs
+                         (for-each prefix-line/substs*
                                    (cond [(thread-cell-ref added-lines)
                                           => unbox]
                                          [else '()]))
