@@ -31,7 +31,7 @@
        (call-in-sandbox-context (submission-eval) make-str)
        (make-str))))
 
-(define fields (map car (get-conf 'extra-fields)))
+(define (fields) (map car (get-conf 'extra-fields)))
 
 (provide submission-dir)
 (define submission-dir-re
@@ -55,7 +55,7 @@
 (provide user-substs)
 (define (user-substs user str)
   (subst str `(("username" . ,user) ("submission" . ,submission-dir)
-               ,@(map cons fields (user-data user)))))
+               ,@(map cons (fields) (user-data user)))))
 
 (define (subst str substs)
   (if (list? str)

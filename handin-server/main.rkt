@@ -35,15 +35,20 @@
   (for ([x (in-list xs)]) (write x port) (newline port))
   (flush-output port))
 
-(define-struct alist (name [l #:mutable]))
-(define (a-set! alist key val)
-  (let ([l (alist-l alist)])
-    (cond [(assq key l) => (lambda (p) (set-box! (cdr p) val))]
-          [else (set-alist-l! alist (cons (cons key (box val)) l))])))
-(define (a-ref alist key . default)
-  (cond [(assq key (alist-l alist)) => (lambda (x) (unbox (cdr x)))]
-        [(pair? default) (car default)]
-        [else (error (alist-name alist) "no value for `~s'" key)]))
+
+(module alist racket/base
+  (provide (all-defined-out))
+  (define-struct alist (name [l #:mutable]))
+  (define (a-set! alist key val)
+    (let ([l (alist-l alist)])
+      (cond [(assq key l) => (lambda (p) (set-box! (cdr p) val))]
+            [else (set-alist-l! alist (cons (cons key (box val)) l))])))
+  (define (a-ref alist key . default)
+    (cond [(assq key (alist-l alist)) => (lambda (x) (unbox (cdr x)))]
+          [(pair? default) (car default)]
+          [else (error (alist-name alist) "no value for `~s'" key)])))
+
+(require 'alist)
 
 (define orig-custodian (current-custodian))
 
@@ -163,18 +168,23 @@
   (apply string-append (car users)
          (map (lambda (u) (string-append "+" u)) (cdr users))))
 
-(provide get-user-assignment-directory)
-(define user-assignment-directory (make-parameter #f))
-(define (get-user-assignment-directory) (user-assignment-directory))
+(module assignment-config racket/base
+  (require (submod ".." alist))
+  (provide (all-defined-out))
+  (provide get-user-assignment-directory)
+  (define user-assignment-directory (make-parameter #f))
+  (define (get-user-assignment-directory) (user-assignment-directory))
+  
+  (provide get-assignment-name)
+  (define assignment-name (make-parameter #f))
+  (define (get-assignment-name) (assignment-name))
+  
+  (provide get-submit-on-error?)
+  (define current-submission-data (make-parameter #f))
+  (define (get-submit-on-error?)
+    (equal? (a-ref (current-submission-data) 'submit-on-error "no") "yes")))
+(require 'assignment-config)
 
-(provide get-assignment-name)
-(define assignment-name (make-parameter #f))
-(define (get-assignment-name) (assignment-name))
-
-(provide get-submit-on-error?)
-(define current-submission-data (make-parameter #f))
-(define (get-submit-on-error?)
-  (equal? (a-ref (current-submission-data) 'submit-on-error "no") "yes"))
 
 (define (accept-specific-submission data r r-safe w)
   ;; Note: users are always sorted
@@ -573,13 +583,20 @@
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define no-limit-warning? #f) ; will be set to #t if no memory limits
+(module timeout-control racket/base
+  (require "private/logger.rkt")
+  (provide current-timeout-control timeout-control)
+  (define current-timeout-control (make-parameter #f))
+  (provide timeout-control)
+  (define (timeout-control msg)
+    (log-line "timeout-control: ~s" msg)
+    ((current-timeout-control) msg)))
 
-(define current-timeout-control (make-parameter #f))
-(provide timeout-control)
-(define (timeout-control msg)
-  (log-line "timeout-control: ~s" msg)
-  ((current-timeout-control) msg))
+
+(require (submod "." timeout-control))
+
+
+(define no-limit-warning? #f) ; will be set to #t if no memory limits
 
 (define (with-watcher w proc)
   (define session-cust (make-custodian))
