@@ -2,8 +2,9 @@
 
 (require racket/class racket/gui/base racket/pretty
          (prefix-in pc: mzlib/pconvert)
-         (only-in "main.rkt"
-                  timeout-control
+         (only-in (submod "main.rkt" timeout-control)
+                  timeout-control)
+         (only-in (submod "main.rkt" assignment-config)
                   get-user-assignment-directory
                   get-assignment-name
                   get-submit-on-error?)
