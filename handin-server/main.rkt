@@ -1,10 +1,13 @@
 #lang racket/base
 
 (require mzlib/thread
+         racket/match
+         racket/place
          racket/port
          openssl
          racket/file
          racket/format
+         "private/constants.rkt"
          "private/logger.rkt"
          "private/config.rkt"
          "private/lock.rkt"
@@ -12,6 +15,7 @@
          "private/run-status.rkt"
          "private/reloadable.rkt"
          "private/hooker.rkt"
+         "private/place.rkt"
          (prefix-in web: "web-status-server.rkt")
          ;; this sets some global parameter values, and this needs
          ;; to be done in the main thread, rather than later in a
@@ -23,27 +27,10 @@
          ;; they're being required dynamically), and further handlers
          ;; will fail with "queue-callback: eventspace is shutdown",
          ;; requiring it here makes it avoids killing the eventspace
-         racket/gui/base)
+         #;racket/gui/base)
 
 (install-logger-port)
 
-;; errors to the user: no need for a "foo: " prefix
-(define (error* fmt . args)
-  (error (apply format fmt args)))
-
-(define (write+flush port . xs)
-  (for ([x (in-list xs)]) (write x port) (newline port))
-  (flush-output port))
-
-(define-struct alist (name [l #:mutable]))
-(define (a-set! alist key val)
-  (let ([l (alist-l alist)])
-    (cond [(assq key l) => (lambda (p) (set-box! (cdr p) val))]
-          [else (set-alist-l! alist (cons (cons key (box val)) l))])))
-(define (a-ref alist key . default)
-  (cond [(assq key (alist-l alist)) => (lambda (x) (unbox (cdr x)))]
-        [(pair? default) (car default)]
-        [else (error (alist-name alist) "no value for `~s'" key)]))
 
 (define orig-custodian (current-custodian))
 
@@ -60,20 +47,6 @@
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define ATTEMPT-DIR "ATTEMPT")
-(define (success-dir n) (format "SUCCESS-~a" n))
-
-(define (make-success-dir-available n)
-  (let ([name (success-dir n)])
-    (when (directory-exists? name)
-      (if (< n (get-conf 'max-upload-keep))
-          (begin (make-success-dir-available (add1 n))
-                 (rename-file-or-directory name (success-dir (add1 n))))
-          (delete-directory/files name)))))
-
-(define ATTEMPT-RE (regexp (format "^~a$" ATTEMPT-DIR)))
-(define SUCCESS-RE (regexp (format "^~a$" (success-dir "[0-9]+"))))
-(define SUCCESS-GOOD (map success-dir '(0 1)))
 
 (define (cleanup-submission-body)
   ;; Find the newest SUCCESS dir -- ignore ATTEMPT, since if it exist it
@@ -164,18 +137,13 @@
          (map (lambda (u) (string-append "+" u)) (cdr users))))
 
 (provide get-user-assignment-directory)
-(define user-assignment-directory (make-parameter #f))
-(define (get-user-assignment-directory) (user-assignment-directory))
 
 (provide get-assignment-name)
-(define assignment-name (make-parameter #f))
-(define (get-assignment-name) (assignment-name))
 
 (provide get-submit-on-error?)
-(define current-submission-data (make-parameter #f))
-(define (get-submit-on-error?)
-  (equal? (a-ref (current-submission-data) 'submit-on-error "no") "yes"))
 
+
+  
 (define (accept-specific-submission data r r-safe w)
   ;; Note: users are always sorted
   (define users       (a-ref data 'usernames))
@@ -231,44 +199,37 @@
         ;; Clear out old ATTEMPT, if any, and make a new one:
         (when (directory-exists? ATTEMPT-DIR)
           (delete-directory/files ATTEMPT-DIR))
+
+        (log-line "creating attempt-dir ~s" ATTEMPT-DIR)
         (make-directory ATTEMPT-DIR)
         (save-submission s (build-path ATTEMPT-DIR "handin"))
         (timeout-control 'reset)
         (log-line "checking ~a for ~a" assignment users)
         (let* ([checker* (path->complete-path (build-path 'up "checker.rkt"))]
-               [checker* (and (file-exists? checker*)
-                              (parameterize ([current-directory server-dir])
-                                (auto-reload-value
-                                 `(file ,(path->string checker*))
-                                 'checker)))])
-          (parameterize ([user-assignment-directory (path->complete-path (build-path 'same))]
-                         [assignment-name assignment])
-            (define-values (pre checker post)            
-              (cond [(not checker*) (values #f #f #f)]
-                    [(procedure? checker*) (values #f checker* #f)]
-                    [(and (list? checker*) (= 3 (length checker*)))
-                     (apply values checker*)]
-                    [else (error* "bad checker value: ~e" checker*)]))
-            (when pre
-              (let ([dir (current-directory)])
-                (with-handlers
-                    ([void (lambda (e)
-                             (parameterize ([current-directory dir])
-                               (unless (ormap (lambda (d)
-                                                (and (directory-exists? d)
-                                                     (regexp-match
-                                                      SUCCESS-RE
-                                                      (path->string d))))
-                                              (directory-list))
-                                 (parameterize ([current-directory ".."])
-                                   (when (directory-exists? dirname)
-                                     (delete-directory/files dirname)))))
-                             (raise e))])
-                  (parameterize ([current-directory ATTEMPT-DIR])
-                    (pre users s)))))
+               [checker-place 
+                (and (file-exists? checker*)
+                     (start-place checker* server-dir assignment ATTEMPT-DIR dirname))])
+          (log-line "place started: ~s" checker-place)
+          (define-values (pre checker post)
+            (cond [(not checker-place) (values #f #f #f)]
+                  [else (match (place-channel-get checker-place)
+                          [(cons 'exn e)
+                           (error* "place startup failed: ~s" e)]
+                          [(list pre checker post)
+                           (define (f sym)
+                             (and sym
+                                  (lambda args
+                                    (place-channel-put checker-place (cons sym args))
+                                    (define r
+                                      (place-channel-get checker-place))
+                                    (if (and (pair? r)  (eq? 'exn (car r)))
+                                        (error (string-append "remote checker raised exception:\n"
+                                                              (cdr r)))
+                                        r))))
+                           (values (f pre) (f checker) (f post))]
+                          [m (error* "bad checker value: ~s" m)])]))
             (let ([part (if checker
-                            (parameterize ([current-directory ATTEMPT-DIR])
-                              (checker users s))
+                            (checker users s)
                             (get-conf 'default-file-name))])
               (write+flush w 'confirm)
               (let ([v (read (make-limited-input-port r 50))])
@@ -286,9 +247,8 @@
                       (hook 'submission-committed
                             `([usernames ,users] [assignment ,assignment]))
                       (when post
-                        (parameterize ([current-directory (success-dir 0)])
-                          (post users s))))
-                    (error* "upload not confirmed: ~s" v))))))))))
+                        (post users s (success-dir 0))))
+                    (error* "upload not confirmed: ~s" v)))))))))
 
 (define (retrieve-specific-submission data w)
   ;; Note: users are always sorted
@@ -722,35 +682,36 @@
      r w)))
 
 (define default-context-length (error-print-context-length))
-(parameterize ([error-display-handler (lambda (msg exn) (log-line msg))]
-               [error-print-context-length 0]
-               [current-directory server-dir])
-  (define port (get-conf 'port-number))
-  (define (start-notify)
-    (log-line "*** handin server started on port ~a" port)
-    (hook 'server-start `([port ,port])))
-  (run-server
-   port
-   (lambda (r w)
-     (error-print-context-length default-context-length)
-     (handle-*-request r w)
-     ;; This close-output-port should not be necessary, and it's here
-     ;; due to a deficiency in the SSL binding.  The problem is that a
-     ;; custodian shutdown of w is harsher for SSL output than a normal
-     ;; close. A normal close flushes an internal buffer that's not
-     ;; supposed to exist, while the shutdown gives up immediately.
-     (close-output-port w))
-   #f ; `with-watcher' handles our timeouts
-   (lambda (exn)
-     (log-line "ERROR: ~a" (if (exn? exn) (exn-message exn) exn)))
-   (lambda (port-k cnt reuse?)
-     (let ([l (ssl-listen port-k 128 #t)])
-       (ssl-load-certificate-chain! l "server-cert.pem")
-       (ssl-load-private-key! l "private-key.pem")
-       (start-notify)
-       l))
-   (lambda (l)
-     (log-line "shutting down")
-     (web-controller 'shutdown)
-     (ssl-close l))
-   ssl-accept ssl-accept/enable-break))
+(module+ main
+  (parameterize ([error-display-handler (lambda (msg exn) (log-line msg))]
+                 [error-print-context-length 0]
+                 [current-directory server-dir])
+    (define port (get-conf 'port-number))
+    (define (start-notify)
+      (log-line "*** handin server started on port ~a" port)
+      (hook 'server-start `([port ,port])))
+    (run-server
+     port
+     (lambda (r w)
+       (error-print-context-length default-context-length)
+       (handle-*-request r w)
+       ;; This close-output-port should not be necessary, and it's here
+       ;; due to a deficiency in the SSL binding.  The problem is that a
+       ;; custodian shutdown of w is harsher for SSL output than a normal
+       ;; close. A normal close flushes an internal buffer that's not
+       ;; supposed to exist, while the shutdown gives up immediately.
+       (close-output-port w))
+     #f ; `with-watcher' handles our timeouts
+     (lambda (exn)
+       (log-line "ERROR: ~a" (if (exn? exn) (exn-message exn) exn)))
+     (lambda (port-k cnt reuse?)
+       (let ([l (ssl-listen port-k 128 #t)])
+         (ssl-load-certificate-chain! l "server-cert.pem")
+         (ssl-load-private-key! l "private-key.pem")
+         (start-notify)
+         l))
+     (lambda (l)
+       (log-line "shutting down")
+       (web-controller 'shutdown)
+       (ssl-close l))
+     ssl-accept ssl-accept/enable-break)))
