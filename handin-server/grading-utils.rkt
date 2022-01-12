@@ -7,6 +7,7 @@
 (require (only-in handin-server/utils get-assignment-name))
 
 (provide check-deadline
+         get-deadline-seconds
          check-max-submissions 
          
          update-submission-timestamp!
