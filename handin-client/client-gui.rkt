@@ -723,6 +723,7 @@
 
 (define handin-icon (scale-by-half (in-this-collection "icon.png")))
 
+(provide editors->string)
 (define (editors->string editors)
   (let* ([base (make-object editor-stream-out-bytes-base%)]
          [stream (make-object editor-stream-out% base)])
