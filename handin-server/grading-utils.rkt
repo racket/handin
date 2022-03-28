@@ -118,7 +118,7 @@
     [(list _ (list year month day hours minutes seconds) max-late-days)
      (values (find-seconds seconds minutes hours day month year)
              (find-seconds seconds minutes hours (+ day max-late-days) month year))]
-    [else #f]))
+    [else (values #f #f)]))
 
 
 (define (check-deadline)
