@@ -650,12 +650,11 @@
                 (proc (lambda ()
                         ;; Proc has succeeded...
                         (parameterize ([current-custodian orig-custodian])
-                          (kill-thread watcher)
-                          ;; unblock the other putting thread if we killed the
-                          ;; watcher too fast.
-                          (channel-try-get watcher-channel))))
+                          (kill-thread watcher))))
                 (channel-put session-channel 'done-normal))))])
-      (channel-put watcher-channel session-thread)
+      ;; if the watcher is dead, give up on the put.
+      (sync (channel-put-evt watcher-channel session-thread)
+            watcher)
       ;; Wait until the proc is done or killed (and kill is reported):
       (channel-get session-channel))))
 
