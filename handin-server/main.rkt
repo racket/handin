@@ -583,6 +583,7 @@
 
 (define (with-watcher w proc)
   (define session-cust (make-custodian))
+  (define watcher-channel (make-channel))
   (define session-channel (make-channel))
   (define timeout #f)
   (define status-box (box #f))
@@ -592,7 +593,7 @@
           (loop (round (/ m 1024)) (car qs) (cdr qs))
           (format "~a~a" m q))))
   (define (watch-loop)
-    (define session-thread (channel-get session-channel))
+    (define session-thread (channel-get watcher-channel))
     (let loop ([timed-out? #f])
       (cond [(sync/timeout 3 session-thread)
              (let* ([status (unbox status-box)]
@@ -649,9 +650,12 @@
                 (proc (lambda ()
                         ;; Proc has succeeded...
                         (parameterize ([current-custodian orig-custodian])
-                          (kill-thread watcher))))
+                          (kill-thread watcher)
+                          ;; unblock the other putting thread if we killed the
+                          ;; watcher too fast.
+                          (channel-try-get watcher-channel))))
                 (channel-put session-channel 'done-normal))))])
-      (channel-put session-channel session-thread)
+      (channel-put watcher-channel session-thread)
       ;; Wait until the proc is done or killed (and kill is reported):
       (channel-get session-channel))))
 
