@@ -545,6 +545,9 @@
       [(get-user-fields)
        (write+flush w (map car (get-conf 'user-fields)))
        (loop)]
+      [(get-status)
+       (write+flush w (hash 'current-memory-use (current-memory-use)))
+       (loop)]
       ;; ----------------------------------------
       ;; action handlers
       ;; (don't loop back except get-user-info which needs authorization)

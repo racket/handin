@@ -6,6 +6,7 @@
          handin-disconnect
          retrieve-user-fields
          retrieve-active-assignments
+         retrieve-status
          submit-assignment
          retrieve-assignment
          submit-addition
@@ -86,6 +87,14 @@
     (let ([v (read r)])
       (unless (and (list? v) (andmap string? v))
         (error* "failed to get active-assignment list from server"))
+      v)))
+
+(define (retrieve-status h)
+  (let ([r (handin-r h)] [w (handin-w h)])
+    (write+flush w 'get-status)
+    (let ([v (read r)])
+      (unless (hash? v)
+        (error* "failed to get status from server"))
       v)))
 
 (define (submit-assignment h username passwd assignment content
