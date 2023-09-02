@@ -32,8 +32,8 @@
     (unless (eq? v 'ok) (error* "~a error: ~a" who v))))
 
 ;; ssl connection, makes a readable error message if no connection
-(define (connect-to server port)
-  (define pem (in-this-collection "server-cert.pem"))
+(define (connect-to server port [cert #f])
+  (define pem (or cert (in-this-collection "server-cert.pem")))
   (define ctx (ssl-make-client-context))
   (ssl-set-verify! ctx #t)
   (ssl-load-default-verify-sources! ctx)
@@ -51,8 +51,8 @@
             (raise (make-exn:fail:network msg (exn-continuation-marks e)))))])
     (ssl-connect server port ctx)))
 
-(define (handin-connect server port)
-  (let-values ([(r w) (connect-to server port)])
+(define (handin-connect server port [cert #f])
+  (let-values ([(r w) (connect-to server port cert)])
     (write+flush w 'handin)
     ;; Sanity check: server sends "handin", first:
     (let ([s (read-bytes 6 r)])
