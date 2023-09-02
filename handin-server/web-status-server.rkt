@@ -9,10 +9,10 @@
          web-server/servlet
          web-server/compat/0/coerce
          web-server/compat/0/http/response-structs
-         handin-server/private/md5
-         handin-server/private/logger
-         handin-server/private/config
-         handin-server/private/hooker
+         "private/md5.rkt"
+         "private/logger.rkt"
+         "private/config.rkt"
+         "private/hooker.rkt"
          "run-servlet.rkt")
 
 (define (aget alist key)
@@ -343,6 +343,7 @@
     (begin0 (parameterize ([error-print-context-length 0])
               (run-servlet
                dispatcher
+               #:extra-dispatcher extra-dispatcher
                #:log-file (get-conf 'web-log-file)))
       (log-line "*** embedded web server started"))
     ;; simple "server" so it's known that there is no server
