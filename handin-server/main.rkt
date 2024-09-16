@@ -1,6 +1,7 @@
 #lang racket/base
 
 (require mzlib/thread
+         racket/tcp
          racket/port
          openssl
          racket/file
@@ -744,6 +745,11 @@
            [else (error 'handin "unknown protocol: ~e" proto)])
      r w)))
 
+(define server-ctx
+  (parameterize ([current-directory server-dir])
+    (ssl-make-server-context #:certificate-chain "server-cert.pem"
+                             #:private-key '(pem "private-key.pem"))))
+
 (define default-context-length (error-print-context-length))
 (parameterize ([error-display-handler (lambda (msg exn) (log-line msg))]
                [error-print-context-length 0]
@@ -754,7 +760,11 @@
     (hook 'server-start `([port ,port])))
   (run-server
    port
-   (lambda (r w)
+   (lambda (r/raw w/raw)
+     (define-values (r w) (ports->ssl-ports r/raw w/raw
+                                            #:mode 'accept
+                                            #:context server-ctx
+                                            #:close-original? #t))
      (error-print-context-length default-context-length)
      (handle-*-request r w)
      ;; This close-output-port should not be necessary, and it's here
@@ -767,13 +777,12 @@
    (lambda (exn)
      (log-line "ERROR: ~a" (if (exn? exn) (exn-message exn) exn)))
    (lambda (port-k cnt reuse?)
-     (let ([l (ssl-listen port-k 128 #t)])
-       (ssl-load-certificate-chain! l "server-cert.pem")
-       (ssl-load-private-key! l "private-key.pem")
+     (let ([l (tcp-listen port-k 128 #t)])
        (start-notify)
        l))
    (lambda (l)
      (log-line "shutting down")
      (web-controller 'shutdown)
-     (ssl-close l))
-   ssl-accept ssl-accept/enable-break))
+     (tcp-close l))
+   tcp-accept
+   tcp-accept/enable-break))
