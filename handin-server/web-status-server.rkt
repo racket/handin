@@ -1,4 +1,4 @@
-#lang racket/base
+#lang at-exp racket/base
 
 (require racket/list
          racket/path
@@ -9,10 +9,12 @@
          web-server/servlet
          web-server/compat/0/coerce
          web-server/compat/0/http/response-structs
-         handin-server/private/md5
-         handin-server/private/logger
-         handin-server/private/config
-         handin-server/private/hooker
+         xml
+         "private/md5.rkt"
+         "private/logger.rkt"
+         "private/config.rkt"
+         "private/hooker.rkt"
+         "private/reloadable.rkt"
          "run-servlet.rkt")
 
 (define (aget alist key)
@@ -21,9 +23,39 @@
 (define (clean-str s)
   (regexp-replace #rx" +$" (regexp-replace #rx"^ +" s "") ""))
 
+(define css @list{
+  body { background-color: white@";" }
+  h1 { width: 100%@";" text-align: center@";" }
+  #all-handins { background-color: #ddddff@";" margin: auto@";" }
+  #all-handins tr { vertical-align: top@";" }
+  #all-handins :is(th, td) { padding: 6px@";" }
+  #all-handins th { text-align: left@";" background-color: #f0f0f0@";"
+                    font-weight: bold@";" font-size: larger@";" }
+  #all-handins td { background-color: white@";" }
+  #all-handins td.grade { text-align: right@";" }
+  .error { color: red@";" }
+})
+
+(define make-page-file #f)
+(define make-page-proc #f)
 (define (make-page title . body)
-  `(html (head (title ,title))
-         (body ([bgcolor "white"]) (h1 ((align "center")) ,title) ,@body)))
+  (define file (get-conf 'handin-make-page))
+  (define (default-maker title . body)
+    (xexpr->string
+     `(html (head (title ,title) (style "\n" ,@css "\n"))
+            (body (h1 ,title) ,@body))))
+  (define maker
+    (cond [(not file) default-maker]
+          [else (unless (equal? file make-page-file)
+                  (set! make-page-file file)
+                  (set! make-page-proc
+                        (auto-reload-procedure `(file ,(path->string file))
+                                               'make-page)))
+                make-page-proc]))
+  (response/output
+   (λ (out)
+     (write-string (apply maker title body) out)
+     (void))))
 
 (define get-user-data
   (let ([users-file (build-path server-dir "users.rktd")])
@@ -38,8 +70,8 @@
 
 (define (make-k k tag #:mode [mode "download"])
   (let ([sep (if (regexp-match? #rx"^[^#]*[?]" k) "&" "?")])
-    (format "~a~atag=~a~amode=~a" 
-            k 
+    (format "~a~atag=~a~amode=~a"
+            k
             sep
             (uri-encode tag)
             ";"
@@ -139,24 +171,24 @@
     (handle-status-request user next null)))
 
 (define (all-status-page user)
-  (define (cell  . texts) `(td ([bgcolor "white"]) ,@texts))
-  (define (rcell . texts) `(td ([bgcolor "white"] [align "right"]) ,@texts))
-  (define (header . texts) `(td ([bgcolor "#f0f0f0"]) (big (strong ,@texts))))
+  (define (cell  . texts) `(td ,@texts))
+  (define (rcell . texts) `(td ([class "grade"]) ,@texts))
+  (define (header . texts) `(th ,@texts))
   (define ((row k active? upload-suffixes) dir)
-    (let ([hi (assignment<->dir dir)])
-      `(tr ([valign "top"])
-         ,(apply header hi (if active? `((br) (small (small "[active]"))) '()))
-         ,(apply cell (handin-link k user hi upload-suffixes))
-         ,(rcell (handin-grade user hi))
-         ,(apply cell (solution-link k hi)))))
+    (define hi (assignment<->dir dir))
+    `(tr ,(if active? `([class "active"]) '())
+       ,(apply header hi (if active? `((br) (small (small "[active]"))) '()))
+       ,(apply cell (handin-link k user hi upload-suffixes))
+       ,(rcell (handin-grade user hi))
+       ,(apply cell (solution-link k hi))))
   (define upload-suffixes (get-conf 'allow-web-upload))
   (let* ([next
           (send/suspend
            (lambda (k)
              (make-page
               (format "All Handins for ~a" user)
-              `(table ([bgcolor "#ddddff"] [cellpadding "6"] [align "center"])
-                 (tr () ,@(map header '(nbsp "Files" "Grade" "Solution")))
+              `(table ([id "all-handins"])
+                 (tr ,@(map header '(nbsp "Files" "Grade" "Solution")))
                  ,@(append (map (row k #t upload-suffixes) (get-conf 'active-dirs))
                            (map (row k #f #f) (get-conf 'inactive-dirs)))))))])
     (handle-status-request user next upload-suffixes)))
@@ -290,8 +322,8 @@
               "Handin Status Login"
               `(form ([action ,k] [method "post"])
                  (table ([align "center"])
-                   (tr (td ([colspan "2"] [align "center"])
-                           (font ([color "red"]) ,(or errmsg 'nbsp))))
+                   (tr (td ([colspan "2"] [align "center"] [class "error"])
+                           ,(or errmsg 'nbsp)))
                    (tr (td "Username")
                        (td (input ([type "text"] [name "user"] [size "20"]
                                    [value ""]))))
