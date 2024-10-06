@@ -66,18 +66,21 @@
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define ATTEMPT-DIR "ATTEMPT")
+(define (attempt-dir n) (if (zero? n) "ATTEMPT" (format "ATTEMPT-~a" n)))
 (define (success-dir n) (format "SUCCESS-~a" n))
 
-(define (make-success-dir-available n)
-  (let ([name (success-dir n)])
+(define (make-available dir-fun max-keep-conf n)
+  (let ([name (dir-fun n)])
     (when (directory-exists? name)
-      (if (< n (get-conf 'max-upload-keep))
-          (begin (make-success-dir-available (add1 n))
-                 (rename-file-or-directory name (success-dir (add1 n))))
+      (if (< n (get-conf max-keep-conf))
+          (begin (make-available dir-fun max-keep-conf (add1 n))
+                 (rename-file-or-directory name (dir-fun (add1 n))))
           (delete-directory/files name)))))
+(define (make-success-dir-available n)
+  (make-available success-dir 'max-upload-keep n))
+(define (make-attempt-dir-available n)
+  (make-available attempt-dir 'max-attempt-keep n))
 
-(define ATTEMPT-RE (regexp (format "^~a$" ATTEMPT-DIR)))
 (define SUCCESS-RE (regexp (format "^~a$" (success-dir "[0-9]+"))))
 (define SUCCESS-GOOD (map success-dir '(0 1)))
 
@@ -240,10 +243,9 @@
                              (begin (write+flush w 'message-box msg styles)
                                     (read (make-limited-input-port r 50))))])])
         ;; Clear out old ATTEMPT, if any, and make a new one:
-        (when (directory-exists? ATTEMPT-DIR)
-          (delete-directory/files ATTEMPT-DIR))
-        (make-directory ATTEMPT-DIR)
-        (save-submission s (build-path ATTEMPT-DIR "handin"))
+        (make-attempt-dir-available 0)
+        (make-directory (attempt-dir 0))
+        (save-submission s (build-path (attempt-dir 0) "handin"))
         (timeout-control 'reset)
         (log-line "checking ~a for ~a" assignment users)
         (let* ([checker* (path->complete-path (build-path 'up "checker.rkt"))]
@@ -254,7 +256,7 @@
                                  'checker)))])
           (parameterize ([user-assignment-directory (path->complete-path (build-path 'same))]
                          [assignment-name assignment])
-            (define-values (pre checker post)            
+            (define-values (pre checker post)
               (cond [(not checker*) (values #f #f #f)]
                     [(procedure? checker*) (values #f checker* #f)]
                     [(and (list? checker*) (= 3 (length checker*)))
@@ -275,10 +277,10 @@
                                    (when (directory-exists? dirname)
                                      (delete-directory/files dirname)))))
                              (raise e))])
-                  (parameterize ([current-directory ATTEMPT-DIR])
+                  (parameterize ([current-directory (attempt-dir 0)])
                     (pre users s)))))
             (let ([part (if checker
-                            (parameterize ([current-directory ATTEMPT-DIR])
+                            (parameterize ([current-directory (attempt-dir 0)])
                               (checker users s))
                             (get-conf 'default-file-name))])
               (write+flush w 'confirm)
@@ -286,14 +288,14 @@
                 (if (eq? v 'check)
                     (begin
                       (log-line "saving ~a for ~a" assignment users)
-                      (parameterize ([current-directory ATTEMPT-DIR])
+                      (parameterize ([current-directory (attempt-dir 0)])
                         (cond [part (unless (equal? part "handin")
                                       (rename-file-or-directory "handin" part))]
                               [(file-exists? "handin") (delete-file "handin")]))
                       ;; Shift successful-attempt directories so that there's
                       ;;  no SUCCESS-0:
                       (make-success-dir-available 0)
-                      (rename-file-or-directory ATTEMPT-DIR (success-dir 0))
+                      (rename-file-or-directory (attempt-dir 0) (success-dir 0))
                       (hook 'submission-committed
                             `([usernames ,users] [assignment ,assignment]))
                       (when post

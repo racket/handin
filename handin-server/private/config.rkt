@@ -84,6 +84,7 @@
     [(default-file-name)       (values "handin.rkt"          id           )]
     [(max-upload)              (values 500000                id           )]
     [(max-upload-keep)         (values 9                     id           )]
+    [(max-attempt-keep)        (values 0                     id           )]
     [(user-regexp)             (values #rx"^[a-z][a-z0-9]+$" rx           )]
     [(user-desc)               (values "alphanumeric string" id           )]
     [(username-case-sensitive) (values #f                    id           )]
