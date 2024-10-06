@@ -78,10 +78,16 @@ This directory contains the following files and sub-directories:
     acceptable submission; the default is 500000.}
 
   @item{@indexed-racket[max-upload-keep] --- maximum index of
-    submissions to keep; the most recent submission is
+    accepted submissions to keep; the most recent submission is
     @filepath{handin.rkt} (by default), the next oldest is in
-    @filepath{BACKUP-0/handin.rkt}, next oldest is
-    @filepath{BACKUP-1/handin.rkt}, etc.  The default is 9.}
+    @filepath{SUCCESS-0/handin.rkt}, next oldest is
+    @filepath{SUCCESS-1/handin.rkt}, etc.  The default is 9.}
+
+  @item{@indexed-racket[max-attempt-keep] --- maximum index of
+    attempted submissions to keep; the most recent submission is
+    @filepath{ATTEMPT/handin.rkt} (by default), the next oldest is in
+    @filepath{ATTEMPT-1/handin.rkt}, etc.  The default is 0,
+    so only the most recent attempt is kept.}
 
   @item{@indexed-racket[user-regexp] --- a regular expression that is
     used to validate usernames; alternatively, this can be @racket[#f]
@@ -335,7 +341,9 @@ This directory contains the following files and sub-directories:
   or currently-in-submission) handin attempt.  Directories
   @filepath{SUCCESS-n} (where n counts from 0) contain successful
   handins; the lowest numbered such directory represents the latest
-  handin.
+  handin.  Directories @filepath{ATTEMPT-n} (where n counts from 1) contain
+  older unsuccessful handin attempts, if @indexed-racket[max-upload-keep]
+  is set to a value greater than the default 0.
 
   A cleanup process in the server copies successful submissions to the
   student directory, one level up from the corresponding
