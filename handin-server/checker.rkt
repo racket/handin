@@ -375,6 +375,7 @@
             [requires*      (get ':requires      #''())]
             [teachpacks*    (get ':teachpacks    #''())]
             [allowed-requires* (get ':allowed-requires #'#f)]
+            [readers*       (get ':readers       #''auto)]
             [create-text?*  (get ':create-text?  #'#t)]
             [untabify?*     (get ':untabify?     #'#t)]
             [textualize?*   (get ':textualize?   #'#f)]
@@ -421,6 +422,7 @@
                      [language       language*]
                      [requires       requires*]
                      [allowed-requires allowed-requires*]
+                     [readers        readers*]
                      [teachpacks     teachpacks*]
                      [create-text?   create-text?*]
                      [untabify?      untabify?*]
@@ -523,6 +525,7 @@
                                       (call-with-evaluator/submission
                                        language (append requires teachpacks)
                                        #:allowed-requires allowed-requires
+                                       #:readers readers
                                        submission values)))])
                         (set-run-status "running tests")
                         (parameterize ([submission-eval (wrap-evaluator eval)])
