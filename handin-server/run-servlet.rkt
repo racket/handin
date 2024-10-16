@@ -13,6 +13,7 @@
          web-server/managers/lru
          (prefix-in sequencer: web-server/dispatchers/dispatch-sequencer)
          (prefix-in log: web-server/dispatchers/dispatch-log)
+         web-server/dispatchers/dispatch
          web-server/http/request-structs
          net/url
          openssl
@@ -67,6 +68,7 @@
 
 (provide run-servlet)
 (define (run-servlet dispatcher
+                     #:extra-dispatcher [extra-dispatcher #f]
                      #:log-file [log-file #f])
   ;; a channel for incoming requests
   (define ach (make-async-channel))
@@ -93,6 +95,7 @@
      (wrap-sequence
       (and log-file (log:make #:format (log:log-format->format 'apache-default)
                               #:log-path log-file))
+      (and extra-dispatcher (extra-dispatcher next-dispatcher))
       (let ([init-path (make-parameter "/")])
         (dispatch/servlet
          (lambda (req)
